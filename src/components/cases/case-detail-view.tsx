@@ -46,8 +46,6 @@ import {
   formatCurrency,
   formatDate,
   formatFileSize,
-  getExperienceSummary,
-  getQualificationSummary,
   mockCaseDocuments,
   mockInvitations,
   mockTutors,
@@ -157,61 +155,46 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
                   variant="compact"
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tutor</TableHead>
-                      <TableHead>Qualification</TableHead>
-                      <TableHead>Experience</TableHead>
-                      <TableHead>Invited</TableHead>
-                      <TableHead className="w-12" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTutors.map((t) => {
-                      const inv = mockInvitations.find(
-                        (i) => i.caseId === caseData.id && i.tutorId === t.id,
-                      );
-                      return (
-                        <TableRow key={t.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <UserAvatar name={t.displayName} size="sm" />
-                              <span className="font-medium">{t.displayName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-[160px] truncate text-muted-foreground text-xs">
-                            {getQualificationSummary(t)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {getExperienceSummary(t)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {inv ? formatDate(inv.invitedAt) : "—"}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push(`/tutors/${t.id}`)}>
-                                  View Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Remove
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <ul className="divide-y">
+                  {filteredTutors.map((t) => {
+                    const inv = mockInvitations.find(
+                      (i) => i.caseId === caseData.id && i.tutorId === t.id,
+                    );
+                    return (
+                      <li
+                        key={t.id}
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <UserAvatar name={t.displayName} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {t.displayName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Invited {inv ? formatDate(inv.invitedAt) : "—"}
+                          </p>
+                        </div>
+                        <StatusBadge status={inv?.status ?? "pending"} />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/tutors/${t.id}`)}>
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </CardContent>
           </Card>
