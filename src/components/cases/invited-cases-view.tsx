@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { If, Then, Else, When } from "react-if";
 import { Check, Mail, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,6 +90,86 @@ export function InvitedCasesView() {
     );
   }
 
+  let tableContent;
+  if (rows.length === 0) {
+    tableContent = (
+      <EmptyState
+        icon={Mail}
+        title="No invited cases"
+        description="No invited cases match your current filters."
+        variant="compact"
+      />
+    );
+  } else {
+    tableContent = (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Case Title</TableHead>
+            <TableHead>Subject</TableHead>
+            <TableHead>Level</TableHead>
+            <TableHead>Budget</TableHead>
+            <TableHead>Case Status</TableHead>
+            <TableHead>Invitation</TableHead>
+            <TableHead>Invitation Date</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(({ case: c, invitation }) => {
+            let acceptButton = null;
+            if (invitation.status === "pending") {
+              acceptButton = (
+                <Button
+                  size="sm"
+                  onClick={() => handleAccept(invitation.id)}
+                >
+                  <Check className="mr-1.5 h-3.5 w-3.5" />
+                  Accept
+                </Button>
+              );
+            }
+
+            return (
+              <TableRow key={invitation.id}>
+                <TableCell className="font-medium">{c.title}</TableCell>
+                <TableCell className="text-muted-foreground">{c.subject}</TableCell>
+                <TableCell className="text-muted-foreground">{c.level}</TableCell>
+                <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
+                <TableCell><StatusBadge status={c.status} /></TableCell>
+                <TableCell>
+                  <StatusBadge status={invitation.status} />
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(invitation.invitedAt)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    {acceptButton}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/cases/${c.id}`)}
+                        >
+                          View Case
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -132,15 +213,17 @@ export function InvitedCasesView() {
             </Select>
           </div>
 
-          {rows.length === 0 ? (
-            <EmptyState
-              icon={Mail}
-              title="No invited cases"
-              description="No invited cases match your current filters."
-              variant="compact"
-            />
-          ) : (
-            <Table>
+          <If condition={rows.length === 0}>
+            <Then>
+              <EmptyState
+                icon={Mail}
+                title="No invited cases"
+                description="No invited cases match your current filters."
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Case Title</TableHead>
@@ -169,7 +252,7 @@ export function InvitedCasesView() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {invitation.status === "pending" && (
+                        <When condition={invitation.status === "pending"}>
                           <Button
                             size="sm"
                             onClick={() => handleAccept(invitation.id)}
@@ -177,7 +260,7 @@ export function InvitedCasesView() {
                             <Check className="mr-1.5 h-3.5 w-3.5" />
                             Accept
                           </Button>
-                        )}
+                        </When>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -198,7 +281,8 @@ export function InvitedCasesView() {
                 ))}
               </TableBody>
             </Table>
-          )}
+            </Else>
+          </If>
         </CardContent>
       </Card>
     </div>

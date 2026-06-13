@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { If, Then, Else, When } from "react-if";
 import { Download, FileText, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -115,15 +116,17 @@ export function TutorProfileDetailView({ tutor }: TutorProfileDetailViewProps) {
               <CardTitle className="text-base">Supporting Documents</CardTitle>
             </CardHeader>
             <CardContent>
-              {tutor.documents.length === 0 ? (
-                <EmptyState
-                  icon={FileText}
-                  title="No documents"
-                  description="This tutor hasn't uploaded any supporting documents yet."
-                  variant="compact"
-                />
-              ) : (
-                <Table>
+              <If condition={tutor.documents.length === 0}>
+                <Then>
+                  <EmptyState
+                    icon={FileText}
+                    title="No documents"
+                    description="This tutor hasn't uploaded any supporting documents yet."
+                    variant="compact"
+                  />
+                </Then>
+                <Else>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>File Name</TableHead>
@@ -151,12 +154,13 @@ export function TutorProfileDetailView({ tutor }: TutorProfileDetailViewProps) {
                     ))}
                   </TableBody>
                 </Table>
-              )}
+                </Else>
+              </If>
             </CardContent>
           </Card>
         </div>
 
-        {showInvite && (
+        <When condition={showInvite}>
           <Card className="shadow-sm h-fit">
             <CardHeader>
               <CardTitle className="text-base">Actions</CardTitle>
@@ -171,16 +175,16 @@ export function TutorProfileDetailView({ tutor }: TutorProfileDetailViewProps) {
               </p>
             </CardContent>
           </Card>
-        )}
+        </When>
       </div>
 
-      {showInvite && (
+      <When condition={showInvite}>
         <InviteTutorModal
           open={inviteOpen}
           onOpenChange={setInviteOpen}
           onInvite={() => toast.success("Invitation sent")}
         />
-      )}
+      </When>
     </div>
   );
 }

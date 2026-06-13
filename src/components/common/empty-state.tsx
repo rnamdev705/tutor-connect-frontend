@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { If, Then, Else } from "react-if";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
@@ -25,7 +28,7 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   const isCompact = variant === "compact";
-  const showAction = actionLabel && (onAction || actionHref);
+  const showAction = Boolean(actionLabel && (onAction || actionHref));
 
   return (
     <div
@@ -66,20 +69,26 @@ export function EmptyState({
       >
         {description}
       </p>
-      {showAction &&
-        (actionHref ? (
-          <Button className="mt-6" size={isCompact ? "sm" : "default"} asChild>
-            <Link href={actionHref}>{actionLabel}</Link>
-          </Button>
-        ) : (
-          <Button
-            className="mt-6"
-            size={isCompact ? "sm" : "default"}
-            onClick={onAction}
-          >
-            {actionLabel}
-          </Button>
-        ))}
+      <If condition={showAction}>
+        <Then>
+          <If condition={Boolean(actionHref)}>
+            <Then>
+              <Button className="mt-6" size={isCompact ? "sm" : "default"} asChild>
+                <Link href={actionHref!}>{actionLabel}</Link>
+              </Button>
+            </Then>
+            <Else>
+              <Button
+                className="mt-6"
+                size={isCompact ? "sm" : "default"}
+                onClick={onAction}
+              >
+                {actionLabel}
+              </Button>
+            </Else>
+          </If>
+        </Then>
+      </If>
     </div>
   );
 }

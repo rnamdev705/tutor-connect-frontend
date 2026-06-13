@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { If, Then, Else } from "react-if";
 import { AlertCircle, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +26,7 @@ export function ErrorState({
   onRetry,
   className,
 }: ErrorStateProps) {
-  const showAction = onRetry || actionHref;
+  const showAction = Boolean(onRetry || actionHref);
 
   return (
     <Card className={cn("border-destructive/20 shadow-sm", className)}>
@@ -33,16 +36,22 @@ export function ErrorState({
         </div>
         <h3 className="text-lg font-semibold">{title}</h3>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">{message}</p>
-        {showAction &&
-          (actionHref ? (
-            <Button variant="outline" className="mt-6" asChild>
-              <Link href={actionHref}>{actionLabel}</Link>
-            </Button>
-          ) : (
-            <Button variant="outline" className="mt-6" onClick={onRetry}>
-              {actionLabel}
-            </Button>
-          ))}
+        <If condition={showAction}>
+          <Then>
+            <If condition={Boolean(actionHref)}>
+              <Then>
+                <Button variant="outline" className="mt-6" asChild>
+                  <Link href={actionHref!}>{actionLabel}</Link>
+                </Button>
+              </Then>
+              <Else>
+                <Button variant="outline" className="mt-6" onClick={onRetry}>
+                  {actionLabel}
+                </Button>
+              </Else>
+            </If>
+          </Then>
+        </If>
       </CardContent>
     </Card>
   );

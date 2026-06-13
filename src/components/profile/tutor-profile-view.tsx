@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { If, Then, Else } from "react-if";
 import { Download, FileText, Pencil, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,51 +111,54 @@ export function TutorProfileView() {
           </Button>
         </CardHeader>
         <CardContent>
-          {tutor.documents.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title="No documents yet"
-              description="Upload qualifications or supporting files to your profile."
-              actionLabel="Upload Document"
-              onAction={() => setUploadOpen(true)}
-              variant="compact"
-            />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Upload Date</TableHead>
-                  <TableHead className="w-24" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tutor.documents.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.fileName}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(d.uploadedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => setDeleteOpen(true)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <If condition={tutor.documents.length === 0}>
+            <Then>
+              <EmptyState
+                icon={FileText}
+                title="No documents yet"
+                description="Upload qualifications or supporting files to your profile."
+                actionLabel="Upload Document"
+                onAction={() => setUploadOpen(true)}
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Upload Date</TableHead>
+                    <TableHead className="w-24" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {tutor.documents.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.fileName}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(d.uploadedAt)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => setDeleteOpen(true)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Else>
+          </If>
         </CardContent>
       </Card>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { If, Then, Else } from "react-if";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, File, Info, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -248,17 +249,19 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
               </Button>
             </CardHeader>
             <CardContent>
-              {documents.length === 0 ? (
-                <EmptyState
-                  icon={Upload}
-                  title="No documents added yet"
-                  description={`PDF, DOC, DOCX, PNG, JPEG · Max ${MAX_FILE_SIZE_MB}MB`}
-                  actionLabel="Upload document"
-                  onAction={() => setUploadOpen(true)}
-                  variant="compact"
-                />
-              ) : (
-                <ul className="space-y-2">
+              <If condition={documents.length === 0}>
+                <Then>
+                  <EmptyState
+                    icon={Upload}
+                    title="No documents added yet"
+                    description={`PDF, DOC, DOCX, PNG, JPEG · Max ${MAX_FILE_SIZE_MB}MB`}
+                    actionLabel="Upload document"
+                    onAction={() => setUploadOpen(true)}
+                    variant="compact"
+                  />
+                </Then>
+                <Else>
+                  <ul className="space-y-2">
                   {documents.map((file, index) => (
                     <li
                       key={`${file.name}-${index}`}
@@ -285,7 +288,8 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
                     </li>
                   ))}
                 </ul>
-              )}
+                </Else>
+              </If>
             </CardContent>
           </Card>
         </div>

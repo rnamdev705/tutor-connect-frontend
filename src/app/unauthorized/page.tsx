@@ -1,3 +1,5 @@
+"use client";
+
 import { ShieldX } from "lucide-react";
 import { ErrorState } from "@/components/common/error-state";
 

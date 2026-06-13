@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { If, Then, Else, When } from "react-if";
 import {
   Download,
   FileText,
@@ -66,13 +67,12 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [tutorSearch, setTutorSearch] = useState("");
 
   const invitedTutors = mockTutors.filter((t) =>
     caseData.invitedTutorIds.includes(t.id),
   );
   const documents = mockCaseDocuments.filter((d) => d.caseId === caseData.id);
-  const [tutorSearch, setTutorSearch] = useState("");
-
   const filteredTutors = invitedTutors.filter((t) =>
     t.displayName.toLowerCase().includes(tutorSearch.toLowerCase()),
   );
@@ -91,14 +91,14 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
             {caseData.subject} · {caseData.level}
           </p>
         </div>
-        {canManage && (
+        <When condition={canManage}>
           <Button variant="outline" asChild>
             <Link href={`/cases/${caseData.id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit
             </Link>
           </Button>
-        )}
+        </When>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -126,7 +126,7 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
           </CardContent>
         </Card>
 
-        {canManage && (
+        <When condition={canManage}>
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -147,58 +147,61 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
                 placeholder="Search tutors..."
                 className="mb-4"
               />
-              {filteredTutors.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title="No invited tutors"
-                  description="No tutors have been invited to this case yet."
-                  variant="compact"
-                />
-              ) : (
-                <ul className="divide-y">
-                  {filteredTutors.map((t) => {
-                    const inv = mockInvitations.find(
-                      (i) => i.caseId === caseData.id && i.tutorId === t.id,
-                    );
-                    return (
-                      <li
-                        key={t.id}
-                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-                      >
-                        <UserAvatar name={t.displayName} size="sm" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {t.displayName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Invited {inv ? formatDate(inv.invitedAt) : "—"}
-                          </p>
-                        </div>
-                        <StatusBadge status={inv?.status ?? "pending"} />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/tutors/${t.id}`)}>
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Remove
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+              <If condition={filteredTutors.length === 0}>
+                <Then>
+                  <EmptyState
+                    icon={Users}
+                    title="No invited tutors"
+                    description="No tutors have been invited to this case yet."
+                    variant="compact"
+                  />
+                </Then>
+                <Else>
+                  <ul className="divide-y">
+                    {filteredTutors.map((t) => {
+                      const inv = mockInvitations.find(
+                        (i) => i.caseId === caseData.id && i.tutorId === t.id,
+                      );
+                      const invitedDate = inv ? formatDate(inv.invitedAt) : "—";
+
+                      return (
+                        <li
+                          key={t.id}
+                          className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                        >
+                          <UserAvatar name={t.displayName} size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{t.displayName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Invited {invitedDate}
+                            </p>
+                          </div>
+                          <StatusBadge status={inv?.status ?? "pending"} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/tutors/${t.id}`)}>
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Remove
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Else>
+              </If>
             </CardContent>
           </Card>
-        )}
+        </When>
       </div>
 
       <Card className="shadow-sm">
@@ -213,62 +216,65 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          {documents.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title="No documents yet"
-              description="Upload supporting files for this case."
-              actionLabel="Upload Document"
-              onAction={() => setUploadOpen(true)}
-              variant="compact"
-            />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Uploaded By</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.fileName}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {d.fileType.split("/").pop()?.toUpperCase()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatFileSize(d.size)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{d.uploadedBy}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(d.uploadedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+          <If condition={documents.length === 0}>
+            <Then>
+              <EmptyState
+                icon={FileText}
+                title="No documents yet"
+                description="Upload supporting files for this case."
+                actionLabel="Upload Document"
+                onAction={() => setUploadOpen(true)}
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Uploaded By</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {documents.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.fileName}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {d.fileType.split("/").pop()?.toUpperCase()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatFileSize(d.size)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{d.uploadedBy}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(d.uploadedAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Else>
+          </If>
         </CardContent>
       </Card>
 
-      {canManage && (
+      <When condition={canManage}>
         <InviteTutorModal
           open={inviteOpen}
           onOpenChange={setInviteOpen}
           excludeIds={caseData.invitedTutorIds}
           onInvite={() => toast.success("Tutor invited successfully")}
         />
-      )}
+      </When>
       <UploadDocumentModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}

@@ -1,5 +1,6 @@
 "use client";
 
+import { If, Then, Else } from "react-if";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -72,18 +73,21 @@ export function ParentDashboard() {
           </Button>
         </CardHeader>
         <CardContent>
-          {recentCases.length === 0 ? (
-            <EmptyState
-              icon={Briefcase}
-              title="No cases yet"
-              description="Create your first tutoring case to start finding qualified tutors."
-              actionLabel="Create Case"
-              actionHref="/cases/new"
-              variant="compact"
-            />
-          ) : (
-            <CasesTable cases={recentCases} />
-          )}
+          <If condition={recentCases.length === 0}>
+            <Then>
+              <EmptyState
+                icon={Briefcase}
+                title="No cases yet"
+                description="Create your first tutoring case to start finding qualified tutors."
+                actionLabel="Create Case"
+                actionHref="/cases/new"
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <CasesTable cases={recentCases} />
+            </Else>
+          </If>
         </CardContent>
       </Card>
 

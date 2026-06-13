@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { If, Then, Else } from "react-if";
 import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
@@ -60,20 +61,23 @@ export function TutorsDirectoryView() {
             />
           </div>
 
-          {filtered.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="No tutors found"
-              description="No tutors match your search criteria. Try a different name or qualification."
-              variant="compact"
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((tutor) => (
-                <TutorCard key={tutor.id} tutor={tutor} />
-              ))}
-            </div>
-          )}
+          <If condition={filtered.length === 0}>
+            <Then>
+              <EmptyState
+                icon={Users}
+                title="No tutors found"
+                description="No tutors match your search criteria. Try a different name or qualification."
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((tutor) => (
+                  <TutorCard key={tutor.id} tutor={tutor} />
+                ))}
+              </div>
+            </Else>
+          </If>
         </CardContent>
       </Card>
     </div>

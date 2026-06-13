@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { When } from "react-if";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,7 +28,9 @@ export function CasesTable({ cases, showUpdated = false }: CasesTableProps) {
           <TableHead>Title</TableHead>
           <TableHead>Subject</TableHead>
           <TableHead>Status</TableHead>
-          {showUpdated && <TableHead>Updated</TableHead>}
+          <When condition={showUpdated}>
+            <TableHead>Updated</TableHead>
+          </When>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -37,11 +42,11 @@ export function CasesTable({ cases, showUpdated = false }: CasesTableProps) {
             <TableCell>
               <StatusBadge status={c.status} />
             </TableCell>
-            {showUpdated && (
+            <When condition={showUpdated}>
               <TableCell className="text-muted-foreground">
                 {formatDate(c.updatedAt)}
               </TableCell>
-            )}
+            </When>
             <TableCell className="text-right">
               <Button variant="ghost" size="sm" asChild>
                 <Link href={`/cases/${c.id}`}>View</Link>

@@ -1,3 +1,5 @@
+"use client";
+
 import { FileQuestion } from "lucide-react";
 import { EmptyState } from "@/components/common/empty-state";
 

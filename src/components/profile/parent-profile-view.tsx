@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { If, Then, Else } from "react-if";
 import {
   Briefcase,
   FileText,
@@ -154,18 +155,21 @@ export function ParentProfileView() {
           </Button>
         </CardHeader>
         <CardContent>
-          {parentCases.length === 0 ? (
-            <EmptyState
-              icon={Briefcase}
-              title="No cases yet"
-              description="Create your first tutoring case to get started."
-              actionLabel="Create Case"
-              actionHref="/cases/new"
-              variant="compact"
-            />
-          ) : (
-            <CasesTable cases={parentCases.slice(0, 5)} showUpdated />
-          )}
+          <If condition={parentCases.length === 0}>
+            <Then>
+              <EmptyState
+                icon={Briefcase}
+                title="No cases yet"
+                description="Create your first tutoring case to get started."
+                actionLabel="Create Case"
+                actionHref="/cases/new"
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <CasesTable cases={parentCases.slice(0, 5)} showUpdated />
+            </Else>
+          </If>
         </CardContent>
       </Card>
     </div>
