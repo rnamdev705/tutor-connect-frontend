@@ -17,9 +17,14 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_MB } from "@/lib/constants";
 interface UploadDocumentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with the validated file after the simulated upload completes. */
   onUpload?: (file: File) => void;
 }
 
+/**
+ * Modal for uploading case or profile documents.
+ * Validates file type and size against {@link ALLOWED_FILE_TYPES} and {@link MAX_FILE_SIZE_MB}.
+ */
 export function UploadDocumentModal({
   open,
   onOpenChange,

@@ -1,3 +1,11 @@
+/**
+ * Client-side credential store backed by demo users and `localStorage`.
+ *
+ * Demo accounts are always available; registrations are appended to
+ * `tutorconnect-users`. Passwords are stored in plain text for this prototype only.
+ *
+ * @module auth-store
+ */
 import { mockUsers } from "./mock-data";
 import type { User, UserRole } from "./types";
 

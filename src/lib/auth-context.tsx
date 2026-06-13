@@ -1,3 +1,11 @@
+/**
+ * Client-side authentication context for TutorConnect.
+ *
+ * Persists the signed-in {@link User} in `localStorage` under `tutorconnect-auth`.
+ * Wrap the app root with {@link AuthProvider} and consume session state via {@link useAuth}.
+ *
+ * @module auth-context
+ */
 "use client";
 
 import {
@@ -25,6 +33,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = "tutorconnect-auth";
 
+/** Provides auth state and actions to the component tree. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Returns the current auth session and actions.
+ * @throws If called outside of {@link AuthProvider}.
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");

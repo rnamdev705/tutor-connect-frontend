@@ -1,0 +1,75 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Auth & Access Control" />
+
+# Auth & Access Control
+
+## Modules
+
+<table>
+  <thead>
+    <tr>
+      <th>Module</th>
+      <th>Path</th>
+      <th>Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Auth context</td>
+      <td><code>lib/auth-context.tsx</code></td>
+      <td>React Context — session state, login/register/logout</td>
+    </tr>
+    <tr>
+      <td>Auth store</td>
+      <td><code>lib/auth-store.ts</code></td>
+      <td>Credential lookup, demo users, localStorage registrations</td>
+    </tr>
+    <tr>
+      <td>Validation</td>
+      <td><code>lib/validations/auth.ts</code></td>
+      <td>Zod schemas for login and register forms</td>
+    </tr>
+    <tr>
+      <td>Tutor hook</td>
+      <td><code>lib/hooks/use-current-tutor.ts</code></td>
+      <td>Maps signed-in tutor user to TutorProfile</td>
+    </tr>
+  </tbody>
+</table>
+
+## Route protection
+
+`AppShell` redirects unauthenticated users to `/login`. After sign-in, users land on `/dashboard` with role-specific navigation.
+
+## Feature-level gates
+
+- **Parent only:** Create/edit cases, invite tutors, upload case documents.
+- **Tutor only:** Browse cases, view invitations, edit tutor profile.
+- **Owner check:** `canManage` — parent must own the case to edit or delete.
+
+## Demo accounts
+
+<table>
+  <thead>
+    <tr>
+      <th>Role</th>
+      <th>Email</th>
+      <th>Password</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Parent</td>
+      <td><code>sarah@example.com</code></td>
+      <td><code>Password1</code></td>
+    </tr>
+    <tr>
+      <td>Tutor</td>
+      <td><code>james@example.com</code></td>
+      <td><code>Password1</code></td>
+    </tr>
+  </tbody>
+</table>
+
+See **Auth** stories for `LoginForm` and `RegisterForm` components.

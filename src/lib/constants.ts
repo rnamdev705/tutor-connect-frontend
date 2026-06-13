@@ -26,6 +26,7 @@ export const CASE_STATUSES = [
   { value: "closed", label: "Closed" },
 ] as const;
 
+/** Allowed MIME types for document upload (see UploadDocumentModal). */
 export const ALLOWED_FILE_TYPES = [
   "application/pdf",
   "application/msword",
@@ -34,6 +35,7 @@ export const ALLOWED_FILE_TYPES = [
   "image/jpeg",
 ];
 
+/** Maximum upload size in megabytes. */
 export const MAX_FILE_SIZE_MB = 10;
 
 export const APP_NAME = "TutorConnect";

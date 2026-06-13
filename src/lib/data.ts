@@ -1,3 +1,11 @@
+/**
+ * Read-only data access layer over mock fixtures.
+ *
+ * Server components and client hooks call these selectors instead of importing
+ * `mock-data` directly, keeping query logic in one place.
+ *
+ * @module data
+ */
 import {
   mockCaseDocuments,
   mockCases,

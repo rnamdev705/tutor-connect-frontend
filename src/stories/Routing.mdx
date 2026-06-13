@@ -1,0 +1,95 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Routing" />
+
+# Routing
+
+## Public routes
+
+<table>
+  <thead>
+    <tr>
+      <th>Path</th>
+      <th>Page</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>/login</code></td>
+      <td>Sign in</td>
+    </tr>
+    <tr>
+      <td><code>/register</code></td>
+      <td>Create account</td>
+    </tr>
+    <tr>
+      <td><code>/unauthorized</code></td>
+      <td>Access denied</td>
+    </tr>
+  </tbody>
+</table>
+
+## Protected routes (AppShell)
+
+<table>
+  <thead>
+    <tr>
+      <th>Path</th>
+      <th>Roles</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>/dashboard</code></td>
+      <td>Parent, Tutor</td>
+      <td>Role-specific dashboard</td>
+    </tr>
+    <tr>
+      <td><code>/cases</code></td>
+      <td>Parent</td>
+      <td>My cases list</td>
+    </tr>
+    <tr>
+      <td><code>/cases/new</code></td>
+      <td>Parent</td>
+      <td>Create case</td>
+    </tr>
+    <tr>
+      <td><code>/cases/[id]</code></td>
+      <td>Parent, Tutor</td>
+      <td>Case detail</td>
+    </tr>
+    <tr>
+      <td><code>/tutors</code></td>
+      <td>Parent</td>
+      <td>Tutor directory</td>
+    </tr>
+    <tr>
+      <td><code>/tutors/[id]</code></td>
+      <td>Parent</td>
+      <td>Tutor profile</td>
+    </tr>
+    <tr>
+      <td><code>/invitations</code></td>
+      <td>Tutor</td>
+      <td>Invited cases</td>
+    </tr>
+    <tr>
+      <td><code>/profile</code></td>
+      <td>Parent, Tutor</td>
+      <td>View profile</td>
+    </tr>
+    <tr>
+      <td><code>/profile/edit</code></td>
+      <td>Parent, Tutor</td>
+      <td>Edit profile</td>
+    </tr>
+  </tbody>
+</table>
+
+## Navigation by role
+
+**Parent:** Dashboard → My Cases → Tutor Directory → Profile
+
+**Tutor:** Dashboard → Browse Cases → Invited Cases → My Profile

@@ -1,0 +1,56 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Architecture" />
+
+# Architecture
+
+## Layers
+
+<table>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Location</th>
+      <th>Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Routes</td>
+      <td><code>src/app/</code></td>
+      <td>App Router pages, layouts, metadata</td>
+    </tr>
+    <tr>
+      <td>Features</td>
+      <td><code>src/components/</code></td>
+      <td>Role-specific views (cases, tutors, profile, dashboard)</td>
+    </tr>
+    <tr>
+      <td>Shared UI</td>
+      <td><code>src/components/common/</code></td>
+      <td>Reusable primitives documented in Storybook</td>
+    </tr>
+    <tr>
+      <td>Data</td>
+      <td><code>src/lib/data.ts</code></td>
+      <td>Selectors over mock fixtures</td>
+    </tr>
+    <tr>
+      <td>Auth</td>
+      <td><code>src/lib/auth-context.tsx</code></td>
+      <td>Client session, login/register/logout</td>
+    </tr>
+  </tbody>
+</table>
+
+## Patterns
+
+- **Server + client split:** Detail routes fetch data on the server; interactive views are client components.
+- **Access control:** `AppShell` guards authenticated routes; feature views check role via `useAuth()`.
+- **Conditionals:** `react-if` (`If`, `Then`, `Else`, `When`) instead of nested ternaries.
+- **Forms:** `react-hook-form` + Zod schemas in `lib/validations/`.
+- **Empty/error UI:** Shared `EmptyState` and `ErrorState` components.
+
+## Protected route group
+
+Authenticated pages live under `src/app/(app)/` and share `AppShell` (sidebar + top nav). Public routes: login, register, docs, unauthorized.

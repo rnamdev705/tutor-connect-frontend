@@ -1,5 +1,11 @@
+/**
+ * Zod validation schemas for authentication forms.
+ *
+ * @module validations/auth
+ */
 import { z } from "zod";
 
+/** Login email + password rules (min 8 chars). */
 export const loginSchema = z.object({
   email: z
     .string()
@@ -11,6 +17,7 @@ export const loginSchema = z.object({
     .min(8, "Password must be at least 8 characters"),
 });
 
+/** Register form with role, password strength, and confirm-password match. */
 export const registerSchema = z
   .object({
     name: z
