@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Mail } from "lucide-react";
+import { Download, FileText, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { EmptyState } from "@/components/common/empty-state";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
+import { useAuth } from "@/lib/auth-context";
 import {
   formatDate,
   formatFileSize,
@@ -29,13 +31,11 @@ import { toast } from "sonner";
 
 interface TutorProfileDetailViewProps {
   tutor: TutorProfile;
-  showInvite?: boolean;
 }
 
-export function TutorProfileDetailView({
-  tutor,
-  showInvite = true,
-}: TutorProfileDetailViewProps) {
+export function TutorProfileDetailView({ tutor }: TutorProfileDetailViewProps) {
+  const { user } = useAuth();
+  const showInvite = user?.role === "parent";
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
@@ -116,9 +116,12 @@ export function TutorProfileDetailView({
             </CardHeader>
             <CardContent>
               {tutor.documents.length === 0 ? (
-                <p className="py-4 text-sm text-muted-foreground">
-                  No documents available.
-                </p>
+                <EmptyState
+                  icon={FileText}
+                  title="No documents"
+                  description="This tutor hasn't uploaded any supporting documents yet."
+                  variant="compact"
+                />
               ) : (
                 <Table>
                   <TableHeader>

@@ -55,25 +55,3 @@ export interface Document {
   caseId?: string;
   tutorId?: string;
 }
-
-export interface ActivityEvent {
-  id: string;
-  type:
-    | "case_created"
-    | "tutor_invited"
-    | "tutor_removed"
-    | "document_uploaded"
-    | "case_updated";
-  description: string;
-  timestamp: string;
-  caseId?: string;
-}
-
-export interface DashboardStats {
-  totalCases?: number;
-  openCases?: number;
-  matchedCases?: number;
-  documentsUploaded?: number;
-  invitedCases?: number;
-  openInvitations?: number;
-}

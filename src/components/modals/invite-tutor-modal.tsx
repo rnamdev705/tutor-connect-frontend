@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,8 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/common/search-input";
+import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import {
   getExperienceSummary,
@@ -19,6 +19,7 @@ import {
   mockTutors,
 } from "@/lib/mock-data";
 import type { TutorProfile } from "@/lib/types";
+import { Users } from "lucide-react";
 
 interface InviteTutorModalProps {
   open: boolean;
@@ -64,21 +65,20 @@ export function InviteTutorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search tutors by name or subject..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search tutors by name or subject..."
+        />
 
         <div className="max-h-64 space-y-2 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No tutors found matching your search.
-            </p>
+            <EmptyState
+              icon={Users}
+              title="No tutors found"
+              description="No tutors match your search. Try a different name or subject."
+              variant="compact"
+            />
           ) : (
             filtered.map((tutor) => (
               <button

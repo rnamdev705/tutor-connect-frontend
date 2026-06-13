@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { FileText, Search, Users } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
+import { SearchInput } from "@/components/common/search-input";
+import { EmptyState } from "@/components/common/empty-state";
 import { TutorCard } from "@/components/tutors/tutor-card";
 import {
   getQualificationSummary,
@@ -48,33 +48,25 @@ export function TutorsDirectoryView() {
       <Card className="shadow-sm">
         <CardContent className="pt-6">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name..."
-                value={nameSearch}
-                onChange={(e) => setNameSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by qualification..."
-                value={qualSearch}
-                onChange={(e) => setQualSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <SearchInput
+              value={nameSearch}
+              onChange={setNameSearch}
+              placeholder="Search by name..."
+            />
+            <SearchInput
+              value={qualSearch}
+              onChange={setQualSearch}
+              placeholder="Search by qualification..."
+            />
           </div>
 
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <Users className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                No tutors match your search criteria.
-              </p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No tutors found"
+              description="No tutors match your search criteria. Try a different name or qualification."
+              variant="compact"
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((tutor) => (

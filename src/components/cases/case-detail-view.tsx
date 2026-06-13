@@ -5,15 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Download,
+  FileText,
   MoreHorizontal,
   Pencil,
-  Search,
   Trash2,
   Upload,
   UserPlus,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -36,6 +36,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/common/status-badge";
+import { SearchInput } from "@/components/common/search-input";
+import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
@@ -141,19 +143,19 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search tutors..."
-                  value={tutorSearch}
-                  onChange={(e) => setTutorSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <SearchInput
+                value={tutorSearch}
+                onChange={setTutorSearch}
+                placeholder="Search tutors..."
+                className="mb-4"
+              />
               {filteredTutors.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  No tutors invited yet.
-                </p>
+                <EmptyState
+                  icon={Users}
+                  title="No invited tutors"
+                  description="No tutors have been invited to this case yet."
+                  variant="compact"
+                />
               ) : (
                 <Table>
                   <TableHeader>
@@ -229,9 +231,14 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No documents uploaded yet.
-            </p>
+            <EmptyState
+              icon={FileText}
+              title="No documents yet"
+              description="Upload supporting files for this case."
+              actionLabel="Upload Document"
+              onAction={() => setUploadOpen(true)}
+              variant="compact"
+            />
           ) : (
             <Table>
               <TableHeader>

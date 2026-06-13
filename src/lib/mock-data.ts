@@ -1,5 +1,4 @@
 import type {
-  ActivityEvent,
   Case,
   CaseInvitation,
   Document,
@@ -249,44 +248,6 @@ export const mockCaseDocuments: Document[] = [
   },
 ];
 
-export const mockActivities: ActivityEvent[] = [
-  {
-    id: "act-1",
-    type: "case_created",
-    description: "Case created: GCSE Maths Exam Preparation",
-    timestamp: "2026-01-15T10:00:00Z",
-    caseId: "case-1",
-  },
-  {
-    id: "act-2",
-    type: "tutor_invited",
-    description: "James Chen was invited to the case",
-    timestamp: "2026-02-01T10:00:00Z",
-    caseId: "case-1",
-  },
-  {
-    id: "act-3",
-    type: "document_uploaded",
-    description: "Exam_Syllabus.pdf was uploaded",
-    timestamp: "2026-01-16T11:00:00Z",
-    caseId: "case-1",
-  },
-  {
-    id: "act-4",
-    type: "case_updated",
-    description: "Budget updated to £45/hour",
-    timestamp: "2026-02-20T14:30:00Z",
-    caseId: "case-1",
-  },
-  {
-    id: "act-5",
-    type: "tutor_invited",
-    description: "Emily Watson was invited to the case",
-    timestamp: "2025-12-05T14:00:00Z",
-    caseId: "case-2",
-  },
-];
-
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -306,16 +267,6 @@ export function formatDate(date: string): string {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(date));
-}
-
-export function formatDateTime(date: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(new Date(date));
 }
 

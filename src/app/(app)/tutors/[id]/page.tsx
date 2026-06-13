@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TutorProfileDetailView } from "@/components/tutors/tutor-profile-detail-view";
-import { getTutorById } from "@/lib/tutor-data";
+import { getTutorById } from "@/lib/data";
 
 export default async function TutorDetailPage({
   params,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
-import { mockTutors } from "@/lib/mock-data";
+import { getTutorByUserId } from "@/lib/data";
 import { SUBJECTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 
@@ -24,7 +24,7 @@ export function ProfileEditView() {
   const { user } = useAuth();
   const router = useRouter();
   const isTutor = user?.role === "tutor";
-  const tutor = isTutor ? mockTutors[0] : null;
+  const tutor = user && isTutor ? getTutorByUserId(user.id) : null;
 
   const [form, setForm] = useState({
     displayName: tutor?.displayName ?? user?.name ?? "",
@@ -37,15 +37,16 @@ export function ProfileEditView() {
 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
 
-  useEffect(() => {
-    if (saveState !== "idle") return;
-    const timer = setTimeout(() => {
-      setSaveState("saving");
-      setTimeout(() => setSaveState("saved"), 800);
-      setTimeout(() => setSaveState("idle"), 2500);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [form, saveState]);
+  const handleSave = () => {
+    setSaveState("saving");
+    setTimeout(() => {
+      setSaveState("saved");
+      setTimeout(() => {
+        setSaveState("idle");
+        router.push("/profile");
+      }, 800);
+    }, 600);
+  };
 
   const toggleSubject = (subject: string) => {
     setForm((f) => ({
@@ -189,7 +190,7 @@ export function ProfileEditView() {
         <Button variant="outline" asChild>
           <Link href="/profile">Cancel</Link>
         </Button>
-        <Button onClick={() => router.push("/profile")}>Save Changes</Button>
+        <Button onClick={handleSave}>Save Changes</Button>
       </div>
     </div>
   );

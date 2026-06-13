@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
@@ -8,6 +9,8 @@ interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
+  actionHref?: string;
+  variant?: "default" | "compact";
   className?: string;
 }
 
@@ -17,25 +20,66 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  actionHref,
+  variant = "default",
   className,
 }: EmptyStateProps) {
+  const isCompact = variant === "compact";
+  const showAction = actionLabel && (onAction || actionHref);
+
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 px-6 py-16 text-center",
+        "flex flex-col items-center justify-center text-center",
+        isCompact
+          ? "px-4 py-8"
+          : "rounded-xl border border-dashed bg-muted/30 px-6 py-16",
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-7 w-7 text-muted-foreground" />
+      <div
+        className={cn(
+          "mb-4 flex items-center justify-center rounded-full bg-muted",
+          isCompact ? "h-10 w-10" : "h-14 w-14",
+        )}
+      >
+        <Icon
+          className={cn(
+            "text-muted-foreground",
+            isCompact ? "h-5 w-5" : "h-7 w-7",
+          )}
+        />
       </div>
-      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">{description}</p>
-      {actionLabel && onAction && (
-        <Button className="mt-6" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
+      <h3
+        className={cn(
+          "font-semibold text-foreground",
+          isCompact ? "text-sm" : "text-lg",
+        )}
+      >
+        {title}
+      </h3>
+      <p
+        className={cn(
+          "mt-2 max-w-sm text-muted-foreground",
+          isCompact ? "text-xs" : "text-sm",
+        )}
+      >
+        {description}
+      </p>
+      {showAction &&
+        (actionHref ? (
+          <Button className="mt-6" size={isCompact ? "sm" : "default"} asChild>
+            <Link href={actionHref}>{actionLabel}</Link>
+          </Button>
+        ) : (
+          <Button
+            className="mt-6"
+            size={isCompact ? "sm" : "default"}
+            onClick={onAction}
+          >
+            {actionLabel}
+          </Button>
+        ))}
     </div>
   );
 }

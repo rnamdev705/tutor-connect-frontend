@@ -2,10 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Mail, MoreHorizontal, Search } from "lucide-react";
+import { Check, Mail, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -29,26 +27,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
+import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
-import { invitationStatusStyles } from "@/components/cases/cases-list-view";
+import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { getInvitationsForTutor } from "@/lib/data";
 import {
   formatCurrency,
   formatDate,
   mockCases,
-  mockInvitations,
-  mockTutors,
 } from "@/lib/mock-data";
 import type { CaseInvitation } from "@/lib/types";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
-  const tutor = mockTutors[0];
+  const tutor = useCurrentTutor();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [invitationFilter, setInvitationFilter] = useState("all");
-  const [invitations, setInvitations] = useState<CaseInvitation[]>(
-    mockInvitations.filter((i) => i.tutorId === tutor.id),
+  const [invitations, setInvitations] = useState<CaseInvitation[]>(() =>
+    tutor ? getInvitationsForTutor(tutor.id) : [],
   );
 
   const handleAccept = (invitationId: string) => {
@@ -62,12 +62,13 @@ export function InvitedCasesView() {
 
   const rows = useMemo(() => {
     return invitations
-      .map((inv) => ({
-        invitation: inv,
-        case: mockCases.find((c) => c.id === inv.caseId)!,
-      }))
+      .map((inv) => {
+        const caseData = mockCases.find((c) => c.id === inv.caseId);
+        if (!caseData) return null;
+        return { invitation: inv, case: caseData };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
       .filter(({ case: c, invitation }) => {
-        if (!c) return false;
         if (search && !c.title.toLowerCase().includes(search.toLowerCase()))
           return false;
         if (status !== "all" && c.status !== status) return false;
@@ -76,6 +77,17 @@ export function InvitedCasesView() {
         return true;
       });
   }, [invitations, search, status, invitationFilter]);
+
+  if (!tutor) {
+    return (
+      <ErrorState
+        title="Profile not found"
+        message="We couldn't find a tutor profile linked to your account."
+        actionLabel="Go to dashboard"
+        actionHref="/dashboard"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -88,15 +100,11 @@ export function InvitedCasesView() {
       <Card className="shadow-sm">
         <CardContent className="pt-6">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search cases..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search cases..."
+            />
             <Select value={status} onValueChange={(v) => v && setStatus(v)}>
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Case status" />
@@ -125,12 +133,12 @@ export function InvitedCasesView() {
           </div>
 
           {rows.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <Mail className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                No invited cases match your filters.
-              </p>
-            </div>
+            <EmptyState
+              icon={Mail}
+              title="No invited cases"
+              description="No invited cases match your current filters."
+              variant="compact"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -154,13 +162,7 @@ export function InvitedCasesView() {
                     <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={invitationStatusStyles[invitation.status]}
-                      >
-                        {invitation.status.charAt(0).toUpperCase() +
-                          invitation.status.slice(1)}
-                      </Badge>
+                      <StatusBadge status={invitation.status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(invitation.invitedAt)}

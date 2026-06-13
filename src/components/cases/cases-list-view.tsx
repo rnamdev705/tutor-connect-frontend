@@ -3,10 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Briefcase, MoreHorizontal, Plus, Search } from "lucide-react";
+import { Briefcase, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -30,21 +28,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
+import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
+import { getCasesByOwnerId } from "@/lib/data";
 import {
   formatCurrency,
   formatDate,
   mockCases,
 } from "@/lib/mock-data";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
-
-const invitationStatusStyles = {
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  declined: "bg-gray-100 text-gray-600 border-gray-200",
-};
 
 export function CasesListView() {
   const { user } = useAuth();
@@ -57,7 +51,7 @@ export function CasesListView() {
 
   const cases = isTutor
     ? mockCases
-    : mockCases.filter((c) => c.ownerId === user?.id);
+    : getCasesByOwnerId(user?.id ?? "");
 
   const filtered = useMemo(() => {
     return cases.filter((c) => {
@@ -109,15 +103,11 @@ export function CasesListView() {
       <Card className="shadow-sm">
         <CardContent className="pt-6">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search cases..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search cases..."
+            />
             <Select value={subject} onValueChange={(v) => v && setSubject(v)}>
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Subject" />
@@ -154,9 +144,12 @@ export function CasesListView() {
           </div>
 
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No cases match your filters.
-            </p>
+            <EmptyState
+              icon={Briefcase}
+              title="No matching cases"
+              description="Try adjusting your search or filters to find cases."
+              variant="compact"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -228,5 +221,3 @@ export function CasesListView() {
     </div>
   );
 }
-
-export { invitationStatusStyles };

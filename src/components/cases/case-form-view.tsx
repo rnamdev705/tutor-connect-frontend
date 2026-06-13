@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
+import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
 import type { Case, CaseStatus } from "@/lib/types";
@@ -248,22 +249,14 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
             </CardHeader>
             <CardContent>
               {documents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 px-6 py-10 text-center">
-                  <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm font-medium">No documents added yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    PDF, DOC, DOCX, PNG, JPEG · Max {MAX_FILE_SIZE_MB}MB
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => setUploadOpen(true)}
-                  >
-                    Upload document
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={Upload}
+                  title="No documents added yet"
+                  description={`PDF, DOC, DOCX, PNG, JPEG · Max ${MAX_FILE_SIZE_MB}MB`}
+                  actionLabel="Upload document"
+                  onAction={() => setUploadOpen(true)}
+                  variant="compact"
+                />
               ) : (
                 <ul className="space-y-2">
                   {documents.map((file, index) => (

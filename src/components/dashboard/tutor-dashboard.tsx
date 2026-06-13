@@ -10,22 +10,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatCard } from "@/components/common/stat-card";
-import {
-  mockCases,
-  mockInvitations,
-  mockTutors,
-} from "@/lib/mock-data";
+import { ErrorState } from "@/components/common/error-state";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { getTutorDashboardStats } from "@/lib/data";
 
 export function TutorDashboard() {
-  const tutor = mockTutors[0];
-  const invitations = mockInvitations.filter((i) => i.tutorId === tutor.id);
+  const tutor = useCurrentTutor();
 
-  const stats = {
-    invited: invitations.length,
-    open: invitations.filter((i) => i.status === "pending").length,
-    documents: tutor.documents.length,
-    availableCases: mockCases.filter((c) => c.status === "open").length,
-  };
+  if (!tutor) {
+    return (
+      <ErrorState
+        title="Profile not found"
+        message="We couldn't find a tutor profile linked to your account."
+        actionLabel="Go to dashboard"
+        actionHref="/dashboard"
+      />
+    );
+  }
+
+  const stats = getTutorDashboardStats(tutor);
 
   return (
     <div className="space-y-8">
