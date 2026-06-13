@@ -39,10 +39,13 @@ import {
 import { StatusBadge } from "@/components/common/status-badge";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { useAuth } from "@/lib/auth-context";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { isTutorInvitedToCase } from "@/lib/data";
 import {
   formatCurrency,
   formatDate,
@@ -60,10 +63,26 @@ interface CaseDetailViewProps {
 
 export function CaseDetailView({ caseData }: CaseDetailViewProps) {
   const { user } = useAuth();
+  const tutor = useCurrentTutor();
   const router = useRouter();
   const isParent = user?.role === "parent";
   const isOwner = user?.id === caseData.ownerId;
   const canManage = isParent && isOwner;
+  const isInvitedTutor =
+    user?.role === "tutor" &&
+    tutor != null &&
+    isTutorInvitedToCase(tutor.id, caseData.id);
+
+  if (user?.role === "tutor" && !isInvitedTutor) {
+    return (
+      <ErrorState
+        title="Access denied"
+        message="You can only view cases you have been invited to."
+        actionLabel="Go to invited cases"
+        actionHref="/invitations"
+      />
+    );
+  }
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);

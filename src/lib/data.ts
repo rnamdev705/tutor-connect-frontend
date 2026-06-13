@@ -23,9 +23,9 @@ export interface ParentCaseStats {
 
 export interface TutorDashboardStats {
   invited: number;
-  open: number;
+  pending: number;
+  accepted: number;
   documents: number;
-  availableCases: number;
 }
 
 export function getCaseById(id: string): Case | undefined {
@@ -61,13 +61,29 @@ export function getInvitationsForTutor(tutorId: string): CaseInvitation[] {
   return mockInvitations.filter((i) => i.tutorId === tutorId);
 }
 
+export function getCasesForTutor(tutorProfileId: string): Case[] {
+  const caseIds = new Set(
+    getInvitationsForTutor(tutorProfileId).map((invitation) => invitation.caseId),
+  );
+  return mockCases.filter((c) => caseIds.has(c.id));
+}
+
+export function isTutorInvitedToCase(
+  tutorProfileId: string,
+  caseId: string,
+): boolean {
+  return getInvitationsForTutor(tutorProfileId).some(
+    (invitation) => invitation.caseId === caseId,
+  );
+}
+
 export function getTutorDashboardStats(tutor: TutorProfile): TutorDashboardStats {
   const invitations = getInvitationsForTutor(tutor.id);
 
   return {
     invited: invitations.length,
-    open: invitations.filter((i) => i.status === "pending").length,
+    pending: invitations.filter((i) => i.status === "pending").length,
+    accepted: invitations.filter((i) => i.status === "accepted").length,
     documents: tutor.documents.length,
-    availableCases: mockCases.filter((c) => c.status === "open").length,
   };
 }

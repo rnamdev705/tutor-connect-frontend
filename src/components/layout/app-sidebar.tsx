@@ -32,7 +32,6 @@ const parentNav: NavItem[] = [
 
 const tutorNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Browse Cases", href: "/cases", icon: Briefcase },
   { label: "Invited Cases", href: "/invitations", icon: Mail },
   { label: "My Profile", href: "/profile", icon: User },
 ];

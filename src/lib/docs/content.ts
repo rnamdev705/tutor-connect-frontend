@@ -17,7 +17,7 @@ export const DOC_SECTIONS: DocSection[] = [
     description: "Stack, goals, and high-level structure",
     content: [
       "TutorConnect is a role-based tutoring marketplace built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and shadcn/ui.",
-      "Parents create tutoring cases, invite tutors, and upload documents. Tutors browse cases, manage invitations, and maintain a profile.",
+      "Parents create tutoring cases, invite tutors, and upload documents. Tutors manage invitations and maintain a profile.",
       "This prototype uses mock data in lib/mock-data.ts with selectors in lib/data.ts. Auth is client-side via React Context and localStorage.",
     ],
   },
@@ -41,7 +41,7 @@ export const DOC_SECTIONS: DocSection[] = [
       "Public: /login, /register, /docs, /unauthorized, 404.",
       "Protected (AppShell): /dashboard, /cases, /cases/new, /cases/[id], /cases/[id]/edit, /tutors, /tutors/[id], /invitations, /profile, /profile/edit.",
       "Parent nav: Dashboard, My Cases, Tutor Directory, Profile.",
-      "Tutor nav: Dashboard, Browse Cases, Invited Cases, My Profile.",
+      "Tutor nav: Dashboard, Invited Cases, My Profile.",
     ],
   },
   {

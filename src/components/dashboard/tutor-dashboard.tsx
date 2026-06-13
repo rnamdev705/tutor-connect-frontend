@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Briefcase, FileText, Mail, Pencil } from "lucide-react";
+import { FileText, Mail, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,14 +37,14 @@ export function TutorDashboard() {
           Welcome back, {tutor.displayName.split(" ")[0]}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Browse open cases and manage your invitations.
+          Review your invitations and manage your tutor profile.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Invited Cases" value={stats.invited} icon={Mail} />
-        <StatCard title="Open Invitations" value={stats.open} icon={Briefcase} />
-        <StatCard title="Open Cases" value={stats.availableCases} icon={Briefcase} />
+        <StatCard title="Pending Invitations" value={stats.pending} icon={Mail} />
+        <StatCard title="Accepted Invitations" value={stats.accepted} icon={Mail} />
         <StatCard title="Uploaded Documents" value={stats.documents} icon={FileText} />
       </div>
 
@@ -54,15 +54,9 @@ export function TutorDashboard() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button variant="outline" asChild>
-            <Link href="/cases">
-              <Briefcase className="mr-2 h-4 w-4" />
-              Browse Cases
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
             <Link href="/invitations">
               <Mail className="mr-2 h-4 w-4" />
-              View Invitations
+              View Invited Cases
             </Link>
           </Button>
           <Button variant="outline" asChild>
