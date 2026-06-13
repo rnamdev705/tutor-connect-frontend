@@ -29,6 +29,11 @@ export const Default: Story = {
 };
 
 export const DashboardGrid: Story = {
+  args: {
+    title: "Open cases",
+    value: 3,
+    icon: Briefcase,
+  },
   render: () => (
     <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
       <StatCard

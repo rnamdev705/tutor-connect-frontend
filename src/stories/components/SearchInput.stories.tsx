@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { fn } from "storybook/test";
 import { SearchInput } from "@/components/common/search-input";
 
 function SearchInputDemo({
@@ -35,6 +36,10 @@ const meta = {
           "Controlled search field with icon. Used on tutor directory and case list pages.",
       },
     },
+  },
+  args: {
+    value: "",
+    onChange: fn(),
   },
 } satisfies Meta<typeof SearchInput>;
 

@@ -26,6 +26,7 @@ export const Default: Story = {
 };
 
 export const Grid: Story = {
+  args: { tutor: mockTutors[0] },
   render: () => (
     <div className="grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {mockTutors.slice(0, 3).map((tutor) => (

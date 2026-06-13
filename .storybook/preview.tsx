@@ -1,14 +1,14 @@
-import type { Preview } from "@storybook/nextjs-vite";
+import { definePreview } from "@storybook/nextjs-vite";
 import {
   decorators as nextjsDecorators,
   loaders as nextjsLoaders,
   parameters as nextjsParameters,
 } from "@storybook/nextjs-vite/preview";
-import "../src/app/globals.css";
+import "@/app/globals.css";
 
-const preview: Preview = {
-  decorators: [...nextjsDecorators],
-  loaders: [...nextjsLoaders],
+export default definePreview({
+  decorators: nextjsDecorators,
+  loaders: [nextjsLoaders],
   parameters: {
     ...nextjsParameters,
     nextjs: {
@@ -29,6 +29,4 @@ const preview: Preview = {
       test: "todo",
     },
   },
-};
-
-export default preview;
+});

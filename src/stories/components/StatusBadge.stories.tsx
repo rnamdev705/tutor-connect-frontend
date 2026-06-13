@@ -49,6 +49,7 @@ export const Declined: Story = {
 };
 
 export const AllStatuses: Story = {
+  args: { status: "open" },
   render: () => (
     <div className="flex flex-wrap gap-2">
       {(

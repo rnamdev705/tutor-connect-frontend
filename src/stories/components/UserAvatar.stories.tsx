@@ -32,6 +32,7 @@ export const Default: Story = {
 };
 
 export const AllSizes: Story = {
+  args: { name: "James Chen", size: "md" },
   render: () => (
     <div className="flex items-end gap-4">
       <UserAvatar name="James Chen" size="sm" />
