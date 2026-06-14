@@ -17,14 +17,28 @@ import { DashboardContentSkeleton } from "@/components/common/content-skeletons"
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 
 export function TutorDashboard() {
-  const tutor = useCurrentTutor();
+  const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: invitationsLoading } = useQuery({
     ...allInvitationsListQueryOptions,
     enabled: !!tutor,
   });
 
-  if (!tutor) {
+  if (tutorLoading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review your invitations and manage your tutor profile.
+          </p>
+        </div>
+        <DashboardContentSkeleton />
+      </div>
+    );
+  }
+
+  if (tutorError || !tutor) {
     return (
       <ErrorState
         title="Profile not found"
@@ -54,7 +68,7 @@ export function TutorDashboard() {
         </p>
       </div>
 
-      {isLoading ? (
+      {invitationsLoading ? (
         <DashboardContentSkeleton />
       ) : (
         <>

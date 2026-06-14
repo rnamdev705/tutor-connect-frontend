@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { useAuth } from "@/lib/auth-context";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { isTutorProfileComplete } from "@/lib/tutor-profile-completion";
 import { Button } from "@/components/ui/button";
 
 interface NavItem {
@@ -36,6 +38,10 @@ const tutorNav: NavItem[] = [
   { label: "My Profile", href: "/profile", icon: User },
 ];
 
+const tutorSetupNav: NavItem[] = [
+  { label: "Complete Profile", href: "/profile/edit", icon: User },
+];
+
 interface AppSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -44,7 +50,18 @@ interface AppSidebarProps {
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const navItems = user?.role === "tutor" ? tutorNav : parentNav;
+  const { tutor, isLoading: tutorLoading } = useCurrentTutor();
+
+  const tutorNeedsSetup =
+    user?.role === "tutor" &&
+    !tutorLoading &&
+    !isTutorProfileComplete(tutor, user);
+
+  const navItems = tutorNeedsSetup
+    ? tutorSetupNav
+    : user?.role === "tutor"
+      ? tutorNav
+      : parentNav;
 
   return (
     <aside

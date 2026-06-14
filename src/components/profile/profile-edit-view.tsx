@@ -28,6 +28,10 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { SUBJECTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { FormContentSkeleton } from "@/components/common/content-skeletons";
+import {
+  getTutorProfileMissingFields,
+  isTutorProfileComplete,
+} from "@/lib/tutor-profile-completion";
 import { toast } from "sonner";
 
 export function ProfileEditView() {
@@ -68,12 +72,23 @@ export function ProfileEditView() {
   const isSaving =
     updateMeMutation.isPending || upsertProfileMutation.isPending;
   const formDisabled = isSaving;
+  const profileComplete = isTutorProfileComplete(tutorProfile, user);
+  const mustCompleteProfile = isTutor && !profileComplete;
+  const missingFields = isTutor
+    ? getTutorProfileMissingFields(tutorProfile, user)
+    : [];
 
   const handleSave = async () => {
     if (formDisabled) return;
 
     const displayName = form.displayName.trim();
     const email = form.email.trim().toLowerCase();
+    const qualifications = form.qualifications
+      .split("\n")
+      .map((q) => q.trim())
+      .filter(Boolean);
+    const teachingBackground = form.teachingBackground.trim();
+    const yearsValue = form.yearsOfExperience.trim();
 
     if (!displayName) {
       toast.error("Display name is required");
@@ -83,6 +98,34 @@ export function ProfileEditView() {
     if (!email) {
       toast.error("Email is required");
       return;
+    }
+
+    if (isTutor) {
+      if (qualifications.length === 0) {
+        toast.error("Add at least one qualification");
+        return;
+      }
+
+      if (!yearsValue) {
+        toast.error("Years of experience is required");
+        return;
+      }
+
+      const yearsOfExperience = Number(yearsValue);
+      if (Number.isNaN(yearsOfExperience) || yearsOfExperience < 0) {
+        toast.error("Enter a valid number of years");
+        return;
+      }
+
+      if (form.subjects.length === 0) {
+        toast.error("Select at least one subject");
+        return;
+      }
+
+      if (!teachingBackground) {
+        toast.error("Teaching background is required");
+        return;
+      }
     }
 
     try {
@@ -101,14 +144,9 @@ export function ProfileEditView() {
         await upsertProfileMutation.mutateAsync({
           body: {
             displayName,
-            qualifications: form.qualifications
-              .split("\n")
-              .map((q) => q.trim())
-              .filter(Boolean),
-            teachingBackground: form.teachingBackground.trim(),
-            yearsOfExperience: form.yearsOfExperience
-              ? Number(form.yearsOfExperience)
-              : 0,
+            qualifications,
+            teachingBackground,
+            yearsOfExperience: Number(yearsValue),
             subjectsTaught: form.subjects,
           },
         });
@@ -116,8 +154,8 @@ export function ProfileEditView() {
 
       await queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getTutorsMeProfileQueryKey() });
-      toast.success("Profile updated");
-      router.push("/profile");
+      toast.success(mustCompleteProfile ? "Profile completed" : "Profile updated");
+      router.push(mustCompleteProfile ? "/dashboard" : "/profile");
     } catch (error) {
       toast.error(getApiErrorMessage(error));
     }
@@ -136,20 +174,15 @@ export function ProfileEditView() {
   if (isTutor && isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/profile">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Edit Profile</h1>
-            <p className="text-sm text-muted-foreground">
-              Update your account information
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {mustCompleteProfile ? "Complete Your Profile" : "Edit Profile"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Update your account information
+          </p>
         </div>
-        <FormContentSkeleton sections={isTutor ? 3 : 1} />
+        <FormContentSkeleton sections={3} />
       </div>
     );
   }
@@ -158,21 +191,27 @@ export function ProfileEditView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {formDisabled ? (
-            <Button variant="ghost" size="icon" disabled>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/profile">
+          {!mustCompleteProfile && (
+            formDisabled ? (
+              <Button variant="ghost" size="icon" disabled>
                 <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/profile">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+            )
           )}
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Edit Profile</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {mustCompleteProfile ? "Complete Your Profile" : "Edit Profile"}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Update your account information
+              {mustCompleteProfile
+                ? "Fill in every field below to access the tutor portal."
+                : "Update your account information"}
             </p>
           </div>
         </div>
@@ -184,6 +223,17 @@ export function ProfileEditView() {
         )}
       </div>
 
+      {mustCompleteProfile && missingFields.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50 shadow-sm dark:border-amber-900 dark:bg-amber-950/30">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium">Required before you can continue</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Complete: {missingFields.join(", ")}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Basic Information</CardTitle>
@@ -192,7 +242,7 @@ export function ProfileEditView() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Display Name</Label>
+              <Label htmlFor="name">Display Name *</Label>
               <Input
                 id="name"
                 value={form.displayName}
@@ -203,7 +253,7 @@ export function ProfileEditView() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -222,7 +272,7 @@ export function ProfileEditView() {
         <>
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Qualifications</CardTitle>
+              <CardTitle className="text-base">Qualifications *</CardTitle>
               <CardDescription>One qualification per line</CardDescription>
             </CardHeader>
             <CardContent>
@@ -244,7 +294,7 @@ export function ProfileEditView() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="years">Years of Experience</Label>
+                <Label htmlFor="years">Years of Experience *</Label>
                 <Input
                   id="years"
                   type="number"
@@ -257,7 +307,7 @@ export function ProfileEditView() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Subjects Taught</Label>
+                <Label>Subjects Taught *</Label>
                 <div className="flex flex-wrap gap-2">
                   {SUBJECTS.map((s) => (
                     <Badge
@@ -272,7 +322,7 @@ export function ProfileEditView() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="background">Teaching Background</Label>
+                <Label htmlFor="background">Teaching Background *</Label>
                 <Textarea
                   id="background"
                   rows={4}
@@ -289,14 +339,16 @@ export function ProfileEditView() {
       )}
 
       <div className="flex justify-end gap-3">
-        {formDisabled ? (
-          <Button variant="outline" disabled>
-            Cancel
-          </Button>
-        ) : (
-          <Button variant="outline" asChild>
-            <Link href="/profile">Cancel</Link>
-          </Button>
+        {!mustCompleteProfile && (
+          formDisabled ? (
+            <Button variant="outline" disabled>
+              Cancel
+            </Button>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link href="/profile">Cancel</Link>
+            </Button>
+          )
         )}
         <Button onClick={handleSave} disabled={formDisabled}>
           {isSaving ? (
@@ -304,6 +356,8 @@ export function ProfileEditView() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
             </>
+          ) : mustCompleteProfile ? (
+            "Save & Continue"
           ) : (
             "Save Changes"
           )}

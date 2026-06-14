@@ -69,7 +69,7 @@ export function RegisterForm() {
       setServerError(result.error ?? "Unable to create account");
       return;
     }
-    router.push("/dashboard");
+    router.push(data.role === "tutor" ? "/profile/edit" : "/dashboard");
   };
 
   return (

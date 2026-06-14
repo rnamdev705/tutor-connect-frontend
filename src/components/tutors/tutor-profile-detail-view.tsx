@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { If, Then, Else, When } from "react-if";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Loader2, Mail } from "lucide-react";
+import { DocumentRowActions } from "@/components/documents/document-row-actions";
+import { FileText, Loader2, Mail } from "lucide-react";
 import {
   getTutorsByIdDocumentsOptions,
   getTutorsByIdOptions,
@@ -205,9 +206,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                             {formatDate(d.createdAt)}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <DocumentRowActions document={d} />
                           </TableCell>
                         </TableRow>
                       ))}

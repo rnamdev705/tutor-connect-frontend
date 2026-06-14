@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { LogOut, Search, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { isTutorProfileComplete } from "@/lib/tutor-profile-completion";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/user-avatar";
@@ -20,10 +22,15 @@ export function AppTopNav() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const { tutor, isLoading: tutorLoading } = useCurrentTutor();
 
   if (!user) return null;
 
   const roleLabel = user.role === "parent" ? "Parent" : "Tutor";
+  const tutorNeedsSetup =
+    user.role === "tutor" &&
+    !tutorLoading &&
+    !isTutorProfileComplete(tutor, user);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -41,15 +48,23 @@ export function AppTopNav() {
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <form className="relative w-full max-w-md" onSubmit={handleSearchSubmit}>
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={user.role === "parent" ? "Search cases..." : "Search invitations..."}
-          className="h-9 bg-muted/50 pl-9"
-        />
-      </form>
+      {!tutorNeedsSetup && (
+        <form className="relative w-full max-w-md" onSubmit={handleSearchSubmit}>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={user.role === "parent" ? "Search cases..." : "Search invitations..."}
+            className="h-9 bg-muted/50 pl-9"
+          />
+        </form>
+      )}
+
+      {tutorNeedsSetup && (
+        <p className="text-sm text-muted-foreground">
+          Complete your profile to unlock the tutor portal.
+        </p>
+      )}
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
         <DropdownMenu>
@@ -75,7 +90,11 @@ export function AppTopNav() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/profile")}>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(tutorNeedsSetup ? "/profile/edit" : "/profile")
+              }
+            >
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>

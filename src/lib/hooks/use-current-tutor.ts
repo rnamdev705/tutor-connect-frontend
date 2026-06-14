@@ -6,15 +6,20 @@ import { useAuth } from "@/lib/auth-context";
 
 /**
  * Returns the signed-in tutor's profile from the API.
- * Undefined when logged out, not a tutor, or profile is still loading / missing.
  */
 export function useCurrentTutor() {
   const { user } = useAuth();
+  const isTutor = user?.role === "tutor";
 
-  const { data } = useQuery({
+  const query = useQuery({
     ...getTutorsMeProfileOptions(),
-    enabled: user?.role === "tutor",
+    enabled: isTutor,
+    retry: false,
   });
 
-  return user?.role === "tutor" ? data : undefined;
+  return {
+    tutor: isTutor ? query.data : undefined,
+    isLoading: isTutor && query.isLoading,
+    isError: isTutor && query.isError,
+  };
 }

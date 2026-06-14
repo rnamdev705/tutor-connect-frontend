@@ -240,8 +240,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       <ErrorState
         title="Case not found"
         message="This case does not exist or you do not have access."
-        actionLabel="Back to cases"
-        actionHref="/cases"
+        actionLabel={user?.role === "tutor" ? "Back to invited cases" : "Back to cases"}
+        actionHref={user?.role === "tutor" ? "/invitations" : "/cases"}
       />
     );
   }

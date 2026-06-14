@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { AppSidebar } from "./app-sidebar";
 import { AppTopNav } from "./app-top-nav";
+import { TutorProfileGate } from "@/components/tutors/tutor-profile-gate";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -50,7 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       >
         <AppTopNav />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6">
+          <TutorProfileGate>{children}</TutorProfileGate>
+        </main>
       </div>
     </div>
   );

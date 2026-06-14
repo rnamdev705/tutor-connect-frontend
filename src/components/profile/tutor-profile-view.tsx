@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { If, Then, Else } from "react-if";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Pencil, Trash2, Upload } from "lucide-react";
+import { FileText, Pencil, Upload } from "lucide-react";
 import {
   deleteDocumentsByIdMutation,
   getTutorsByIdDocumentsOptions,
@@ -27,7 +27,11 @@ import {
 } from "@/components/ui/table";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
-import { DocumentTableSkeleton } from "@/components/common/content-skeletons";
+import { DocumentRowActions } from "@/components/documents/document-row-actions";
+import {
+  DocumentTableSkeleton,
+  ProfileActivitySkeleton,
+} from "@/components/common/content-skeletons";
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { PendingTutorDocumentRow, DeletingStatusCell } from "@/components/documents/pending-document-rows";
@@ -41,7 +45,7 @@ import { formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
 
 export function TutorProfileView() {
-  const tutor = useCurrentTutor();
+  const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -76,7 +80,18 @@ export function TutorProfileView() {
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
-  if (!tutor) {
+  if (tutorLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">My Profile</h1>
+        </div>
+        <ProfileActivitySkeleton />
+      </div>
+    );
+  }
+
+  if (tutorError || !tutor) {
     return (
       <ErrorState
         title="Profile not found"
@@ -224,29 +239,15 @@ export function TutorProfileView() {
                         </TableCell>
                         <TableCell>
                           {deleting ? null : (
-                            <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
+                            <DocumentRowActions
+                              document={d}
                               disabled={deleting}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              disabled={deleting}
-                              onClick={() => {
-                                if (deleting) return;
+                              canDelete
+                              onDelete={() => {
                                 setDocumentToDelete(d.id);
                                 setDeleteOpen(true);
                               }}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            />
                           )}
                         </TableCell>
                       </TableRow>
