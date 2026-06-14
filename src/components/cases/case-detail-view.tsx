@@ -50,7 +50,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/common/status-badge";
-import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { ActionBusyOverlay } from "@/components/common/action-busy-overlay";
@@ -62,6 +61,7 @@ import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell, Removin
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
+import { PREVIEW_LIMIT } from "@/lib/pagination";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
@@ -83,7 +83,6 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [deleteCaseOpen, setDeleteCaseOpen] = useState(false);
   const [deleteDocOpen, setDeleteDocOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
-  const [tutorSearch, setTutorSearch] = useState("");
   const { pendingUploads, trackUpload } = usePendingDocumentUploads(caseId);
   const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
   const { trackDelete: trackCaseDelete, isDeleting: isDeletingCase } = usePendingCaseDeletes();
@@ -267,21 +266,27 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     (a, b) => Date.parse(b.invitedAt ?? "") - Date.parse(a.invitedAt ?? ""),
   );
 
-  const invitations = tutorSearch
-    ? sortedInvitations.filter((inv) =>
-        inv.tutor?.displayName?.toLowerCase().includes(tutorSearch.toLowerCase()),
-      )
-    : sortedInvitations;
-
-  const filteredPendingInvites = tutorSearch
-    ? activePendingInvites.filter((inv) =>
-        inv.tutorName.toLowerCase().includes(tutorSearch.toLowerCase()),
-      )
-    : activePendingInvites;
+  const allTutorRows = [
+    ...activePendingInvites.map((inv) => ({
+      kind: "pending" as const,
+      row: inv,
+    })),
+    ...sortedInvitations.map((inv) => ({
+      kind: "invitation" as const,
+      row: inv,
+    })),
+  ];
+  const tutorTotalCount = allTutorRows.length;
+  const previewTutorRows = allTutorRows.slice(0, PREVIEW_LIMIT);
 
   const documents = documentsData?.data ?? [];
-  const documentCount = documents.length + pendingUploads.length;
+  const allDocumentRows = [
+    ...pendingUploads.map((upload) => ({ kind: "pending" as const, row: upload })),
+    ...documents.map((doc) => ({ kind: "document" as const, row: doc })),
+  ];
+  const documentCount = allDocumentRows.length;
   const showDocumentsTable = documentCount > 0;
+  const previewDocumentRows = allDocumentRows.slice(0, PREVIEW_LIMIT);
   const caseIsDeleting = isDeletingCase(caseId);
   const pageBusy = caseIsDeleting;
 
@@ -370,13 +375,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </Button>
             </CardHeader>
             <CardContent>
-              <SearchInput
-                value={tutorSearch}
-                onChange={setTutorSearch}
-                placeholder="Search tutors..."
-                className="mb-4"
-              />
-              <If condition={invitations.length === 0 && filteredPendingInvites.length === 0}>
+              <If condition={tutorTotalCount === 0}>
                 <Then>
                   <EmptyState
                     icon={Users}
@@ -387,19 +386,24 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 </Then>
                 <Else>
                   <ul className="divide-y">
-                    {filteredPendingInvites.map((inv) => (
-                      <li
-                        key={inv.id}
-                        className="flex items-center gap-3 bg-muted/40 py-3 first:pt-0 last:pb-0"
-                      >
-                        <UserAvatar name={inv.tutorName} size="sm" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{inv.tutorName}</p>
-                          <InvitingStatusCell />
-                        </div>
-                      </li>
-                    ))}
-                    {invitations.map((inv) => {
+                    {previewTutorRows.map((item) => {
+                      if (item.kind === "pending") {
+                        const inv = item.row;
+                        return (
+                          <li
+                            key={inv.id}
+                            className="flex items-center gap-3 bg-muted/40 py-3 first:pt-0 last:pb-0"
+                          >
+                            <UserAvatar name={inv.tutorName} size="sm" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{inv.tutorName}</p>
+                              <InvitingStatusCell />
+                            </div>
+                          </li>
+                        );
+                      }
+
+                      const inv = item.row;
                       const tutorInvitePending = pendingInvites.some(
                         (pending) => pending.tutorProfileId === inv.tutorProfileId,
                       );
@@ -479,6 +483,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   </ul>
                 </Else>
               </If>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 w-full"
+                asChild
+              >
+                <Link href={`/cases/${caseId}/tutors`}>
+                  View all{tutorTotalCount > 0 ? ` (${tutorTotalCount})` : ""}
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </When>
@@ -527,10 +541,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingUploads.map((upload) => (
-                    <PendingCaseDocumentRow key={upload.id} upload={upload} />
-                  ))}
-                  {documents.map((d) => {
+                  {previewDocumentRows.map((item) => {
+                    if (item.kind === "pending") {
+                      return (
+                        <PendingCaseDocumentRow key={item.row.id} upload={item.row} />
+                      );
+                    }
+
+                    const d = item.row;
                     const canDeleteDocument =
                       canManage || user?.id === d.uploadedById;
                     const deleting = isDeletingDocument(d.id);
@@ -592,6 +610,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </div>
             </Else>
           </If>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4 w-full"
+            asChild
+          >
+            <Link href={`/cases/${caseId}/documents`}>
+              View all{documentCount > 0 ? ` (${documentCount})` : ""}
+            </Link>
+          </Button>
         </CardContent>
       </Card>
       </div>

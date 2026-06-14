@@ -38,11 +38,13 @@ import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
+import { PaginationControls } from "@/components/common/pagination-controls";
 import { DeletingStatusCell } from "@/components/documents/pending-document-rows";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import type { Case } from "@/api/types.gen";
 import { toast } from "sonner";
@@ -109,6 +111,7 @@ export function CasesListView() {
   const [subject, setSubject] = useState("all");
   const [level, setLevel] = useState("all");
   const [status, setStatus] = useState("all");
+  const [page, setPage] = useState(1);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
   const { trackDelete, isDeleting, hasPending } = usePendingCaseDeletes();
@@ -133,6 +136,8 @@ export function CasesListView() {
   const { data, isLoading } = useQuery(
     getCasesOptions({
       query: {
+        page,
+        limit: DEFAULT_PAGE_SIZE,
         search: search || undefined,
         subject: subject !== "all" ? subject : undefined,
         level: level !== "all" ? level : undefined,
@@ -145,6 +150,7 @@ export function CasesListView() {
   );
 
   const cases = data?.data ?? [];
+  const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
   const filtered = useMemo(() => cases, [cases]);
 
@@ -173,7 +179,7 @@ export function CasesListView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Cases" count={filtered.length}>
+      <PageHeader title="My Cases" count={paginationMeta.total}>
         {user?.role === "parent" && (
           <Button asChild>
             <Link href="/cases/new">
@@ -189,10 +195,21 @@ export function CasesListView() {
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
             <SearchInput
               value={search}
-              onChange={setSearch}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
               placeholder="Search cases..."
             />
-            <Select value={subject} onValueChange={(v) => v && setSubject(v)}>
+            <Select
+              value={subject}
+              onValueChange={(v) => {
+                if (v) {
+                  setSubject(v);
+                  setPage(1);
+                }
+              }}
+            >
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Subject" />
               </SelectTrigger>
@@ -203,7 +220,15 @@ export function CasesListView() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={level} onValueChange={(v) => v && setLevel(v)}>
+            <Select
+              value={level}
+              onValueChange={(v) => {
+                if (v) {
+                  setLevel(v);
+                  setPage(1);
+                }
+              }}
+            >
               <SelectTrigger className="w-full sm:w-36">
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
@@ -214,7 +239,15 @@ export function CasesListView() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                if (v) {
+                  setStatus(v);
+                  setPage(1);
+                }
+              }}
+            >
               <SelectTrigger className="w-full sm:w-36">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -265,6 +298,13 @@ export function CasesListView() {
               </TableBody>
             </Table>
           )}
+          <PaginationControls
+            page={paginationMeta.page}
+            totalPages={paginationMeta.totalPages}
+            total={paginationMeta.total}
+            pageSize={paginationMeta.limit}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
 

@@ -37,9 +37,11 @@ import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { PaginationControls } from "@/components/common/pagination-controls";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
@@ -49,10 +51,13 @@ export function InvitedCasesView() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [invitationFilter, setInvitationFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery(
     getInvitationsOptions({
       query: {
+        page,
+        limit: DEFAULT_PAGE_SIZE,
         search: search || undefined,
         status:
           invitationFilter !== "all"
@@ -72,17 +77,16 @@ export function InvitedCasesView() {
   });
 
   const invitations = data?.data ?? [];
+  const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
   const rows = useMemo(() => {
     return invitations
       .map((inv) => ({ invitation: inv, case: inv.case }))
-      .filter(({ case: c, invitation }) => {
-        if (search && !c.title.toLowerCase().includes(search.toLowerCase()))
-          return false;
+      .filter(({ case: c }) => {
         if (status !== "all" && c.status !== status) return false;
         return true;
       });
-  }, [invitations, search, status]);
+  }, [invitations, status]);
 
   const handleAccept = (invitationId: string) => {
     acceptMutation.mutate({
@@ -115,7 +119,7 @@ export function InvitedCasesView() {
       <PageHeader
         title="Invited Cases"
         description="Cases you've been invited to tutor"
-        count={rows.length}
+        count={paginationMeta.total}
       />
 
       <Card className="shadow-sm">
@@ -123,10 +127,21 @@ export function InvitedCasesView() {
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
             <SearchInput
               value={search}
-              onChange={setSearch}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
               placeholder="Search cases..."
             />
-            <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                if (v) {
+                  setStatus(v);
+                  setPage(1);
+                }
+              }}
+            >
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Case status" />
               </SelectTrigger>
@@ -139,7 +154,12 @@ export function InvitedCasesView() {
             </Select>
             <Select
               value={invitationFilter}
-              onValueChange={(v) => v && setInvitationFilter(v)}
+              onValueChange={(v) => {
+                if (v) {
+                  setInvitationFilter(v);
+                  setPage(1);
+                }
+              }}
             >
               <SelectTrigger className="w-full sm:w-44">
                 <SelectValue placeholder="Invitation" />
@@ -222,6 +242,13 @@ export function InvitedCasesView() {
               </TableBody>
             </Table>
           )}
+          <PaginationControls
+            page={paginationMeta.page}
+            totalPages={paginationMeta.totalPages}
+            total={paginationMeta.total}
+            pageSize={paginationMeta.limit}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

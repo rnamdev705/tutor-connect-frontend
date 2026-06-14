@@ -56,6 +56,7 @@ export type User = {
 
 export type UpdateMeRequest = {
     displayName?: string;
+    email?: string;
     password?: string;
     currentPassword?: string;
 };

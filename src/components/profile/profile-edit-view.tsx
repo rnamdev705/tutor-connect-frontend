@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import {
   getAuthMeQueryKey,
   getTutorsMeProfileOptions,
@@ -42,6 +42,7 @@ export function ProfileEditView() {
 
   const [form, setForm] = useState({
     displayName: user?.name ?? "",
+    email: user?.email ?? "",
     teachingBackground: "",
     yearsOfExperience: "",
     qualifications: "",
@@ -49,28 +50,56 @@ export function ProfileEditView() {
   });
 
   useEffect(() => {
-    setForm({
+    setForm((current) => ({
+      ...current,
       displayName: tutorProfile?.displayName ?? user?.name ?? "",
+      email: user?.email ?? "",
       teachingBackground: tutorProfile?.teachingBackground ?? "",
       yearsOfExperience: tutorProfile?.yearsOfExperience?.toString() ?? "",
       qualifications: tutorProfile?.qualifications.join("\n") ?? "",
       subjects: tutorProfile?.subjectsTaught ?? [],
-    });
-  }, [tutorProfile, user?.name]);
+    }));
+  }, [tutorProfile, user?.email, user?.name]);
 
   const updateMeMutation = useMutation(patchAuthMeMutation());
   const upsertProfileMutation = useMutation(putTutorsMeProfileMutation());
 
+  const isSaving =
+    updateMeMutation.isPending || upsertProfileMutation.isPending;
+  const formDisabled = isSaving;
+
   const handleSave = async () => {
+    if (formDisabled) return;
+
+    const displayName = form.displayName.trim();
+    const email = form.email.trim().toLowerCase();
+
+    if (!displayName) {
+      toast.error("Display name is required");
+      return;
+    }
+
+    if (!email) {
+      toast.error("Email is required");
+      return;
+    }
+
     try {
-      await updateMeMutation.mutateAsync({
-        body: { displayName: form.displayName.trim() },
-      });
+      const meBody: {
+        displayName: string;
+        email?: string;
+      } = { displayName };
+
+      if (email !== user?.email?.toLowerCase()) {
+        meBody.email = email;
+      }
+
+      await updateMeMutation.mutateAsync({ body: meBody });
 
       if (isTutor) {
         await upsertProfileMutation.mutateAsync({
           body: {
-            displayName: form.displayName.trim(),
+            displayName,
             qualifications: form.qualifications
               .split("\n")
               .map((q) => q.trim())
@@ -94,6 +123,7 @@ export function ProfileEditView() {
   };
 
   const toggleSubject = (subject: string) => {
+    if (formDisabled) return;
     setForm((f) => ({
       ...f,
       subjects: f.subjects.includes(subject)
@@ -101,8 +131,6 @@ export function ProfileEditView() {
         : [...f.subjects, subject],
     }));
   };
-
-  const isSaving = updateMeMutation.isPending || upsertProfileMutation.isPending;
 
   if (isTutor && isLoading) {
     return (
@@ -116,11 +144,17 @@ export function ProfileEditView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/profile">
+          {formDisabled ? (
+            <Button variant="ghost" size="icon" disabled>
               <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/profile">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Edit Profile</h1>
             <p className="text-sm text-muted-foreground">
@@ -148,6 +182,7 @@ export function ProfileEditView() {
               <Input
                 id="name"
                 value={form.displayName}
+                disabled={formDisabled}
                 onChange={(e) =>
                   setForm({ ...form, displayName: e.target.value })
                 }
@@ -155,7 +190,15 @@ export function ProfileEditView() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={user?.email ?? ""} disabled />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                disabled={formDisabled}
+                onChange={(e) =>
+                  setForm({ ...form, email: e.target.value })
+                }
+              />
             </div>
           </div>
         </CardContent>
@@ -172,6 +215,7 @@ export function ProfileEditView() {
               <Textarea
                 rows={4}
                 value={form.qualifications}
+                disabled={formDisabled}
                 onChange={(e) =>
                   setForm({ ...form, qualifications: e.target.value })
                 }
@@ -192,6 +236,7 @@ export function ProfileEditView() {
                   type="number"
                   min="0"
                   value={form.yearsOfExperience}
+                  disabled={formDisabled}
                   onChange={(e) =>
                     setForm({ ...form, yearsOfExperience: e.target.value })
                   }
@@ -204,7 +249,7 @@ export function ProfileEditView() {
                     <Badge
                       key={s}
                       variant={form.subjects.includes(s) ? "default" : "outline"}
-                      className="cursor-pointer"
+                      className={formDisabled ? "pointer-events-none opacity-60" : "cursor-pointer"}
                       onClick={() => toggleSubject(s)}
                     >
                       {s}
@@ -218,6 +263,7 @@ export function ProfileEditView() {
                   id="background"
                   rows={4}
                   value={form.teachingBackground}
+                  disabled={formDisabled}
                   onChange={(e) =>
                     setForm({ ...form, teachingBackground: e.target.value })
                   }
@@ -229,10 +275,16 @@ export function ProfileEditView() {
       )}
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" asChild>
-          <Link href="/profile">Cancel</Link>
-        </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
+        {formDisabled ? (
+          <Button variant="outline" disabled>
+            Cancel
+          </Button>
+        ) : (
+          <Button variant="outline" asChild>
+            <Link href="/profile">Cancel</Link>
+          </Button>
+        )}
+        <Button onClick={handleSave} disabled={formDisabled}>
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
