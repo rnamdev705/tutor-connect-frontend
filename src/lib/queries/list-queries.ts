@@ -20,14 +20,20 @@ export const allCasesListQueryOptions = {
   refetchOnWindowFocus: false,
 };
 
-export const openCasesListQueryOptions = {
-  ...getCasesOptions({
-    query: { ...bulkListQuery, status: "open" as const },
-  }),
-  placeholderData: keepPreviousData,
-  staleTime: 60_000,
-  refetchOnWindowFocus: false,
-};
+export function openCasesForInviteQueryOptions(tutorProfileId: string) {
+  return {
+    ...getCasesOptions({
+      query: {
+        ...bulkListQuery,
+        status: "open" as const,
+        tutorProfileId,
+      },
+    }),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  };
+}
 
 export const allTutorsListQueryOptions = {
   ...getTutorsOptions({ query: bulkListQuery }),

@@ -287,37 +287,27 @@
           "ownerName": {
             "type": "string"
           },
-          "invitedTutorIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
+          "invitedCount": {
+            "type": "integer",
+            "minimum": 0
           },
-          "invitationSummaries": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "tutorProfileId": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "status": {
-                  "type": "string",
-                  "enum": [
-                    "pending",
-                    "accepted",
-                    "declined",
-                    "superseded"
-                  ]
-                }
-              },
-              "required": [
-                "tutorProfileId",
-                "status"
-              ]
-            }
+          "tutorInvitation": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "declined",
+                  "superseded"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -338,7 +328,7 @@
           "status",
           "ownerId",
           "ownerName",
-          "invitedTutorIds",
+          "invitedCount",
           "createdAt",
           "updatedAt"
         ]
@@ -431,6 +421,13 @@
           {
             "type": "object",
             "properties": {
+              "invitedTutorIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
               "invitations": {
                 "type": "array",
                 "items": {
@@ -511,6 +508,7 @@
               }
             },
             "required": [
+              "invitedTutorIds",
               "invitations"
             ]
           }
@@ -763,12 +761,9 @@
               "ownerName": {
                 "type": "string"
               },
-              "invitedTutorIds": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
+              "invitedCount": {
+                "type": "integer",
+                "minimum": 0
               },
               "createdAt": {
                 "type": "string",
@@ -789,7 +784,7 @@
               "status",
               "ownerId",
               "ownerName",
-              "invitedTutorIds",
+              "invitedCount",
               "createdAt",
               "updatedAt"
             ]
@@ -1360,7 +1355,7 @@
           "Cases"
         ],
         "summary": "List cases",
-        "description": "Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search` (matches title, subject, or location), `subject`, `level`, `status` (open/matched/closed). Response includes `meta` with total and totalPages.",
+        "description": "Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search`, `subject`, `level`, `status`, `skipCount`, and optional `tutorProfileId` (includes `tutorInvitation` for that tutor only). Response includes `meta` with total and totalPages.",
         "security": [
           {
             "bearerAuth": []
@@ -1442,6 +1437,15 @@
             },
             "required": false,
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "tutorProfileId",
             "in": "query"
           }
         ],

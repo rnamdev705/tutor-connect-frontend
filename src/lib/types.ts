@@ -32,7 +32,7 @@ export interface Case {
   status: CaseStatus;
   ownerId: string;
   ownerName: string;
-  invitedTutorIds: string[];
+  invitedCount: number;
   createdAt: string;
   updatedAt: string;
 }

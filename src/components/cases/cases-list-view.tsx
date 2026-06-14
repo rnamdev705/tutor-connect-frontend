@@ -75,7 +75,7 @@ function CaseTableRow({
       <TableCell>
         {isDeleting ? <DeletingStatusCell /> : <StatusBadge status={caseItem.status} />}
       </TableCell>
-      <TableCell>{caseItem.invitedTutorIds.length}</TableCell>
+      <TableCell>{caseItem.invitedCount}</TableCell>
       <TableCell className="text-muted-foreground">
         {formatDate(caseItem.updatedAt)}
       </TableCell>

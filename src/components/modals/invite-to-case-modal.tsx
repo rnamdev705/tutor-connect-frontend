@@ -19,9 +19,8 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
 import { formatCurrency } from "@/lib/format";
 import { matchesCaseSearch } from "@/lib/pagination";
-import { openCasesListQueryOptions } from "@/lib/queries/list-queries";
+import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
 import type { Case } from "@/api/types.gen";
-import type { AppStatus } from "@/components/common/status-badge";
 
 interface InviteToCaseModalProps {
   open: boolean;
@@ -44,7 +43,7 @@ export function InviteToCaseModal({
   const [selected, setSelected] = useState<Case | null>(null);
 
   const { data, isLoading } = useQuery({
-    ...openCasesListQueryOptions,
+    ...openCasesForInviteQueryOptions(tutorProfileId),
     enabled: open,
   });
 
@@ -53,23 +52,10 @@ export function InviteToCaseModal({
     [data?.data, search],
   );
 
-  const invitationStatusByCaseId = useMemo(() => {
-    const map = new Map<string, AppStatus>();
-    for (const caseItem of data?.data ?? []) {
-      const summary = caseItem.invitationSummaries?.find(
-        (entry) => entry.tutorProfileId === tutorProfileId,
-      );
-      if (summary) {
-        map.set(caseItem.id, summary.status);
-      }
-    }
-    return map;
-  }, [data?.data, tutorProfileId]);
-
   const handleConfirm = () => {
     if (!selected) return;
 
-    const isInvited = selected.invitedTutorIds.includes(tutorProfileId);
+    const isInvited = !!selected.tutorInvitation;
     const isInviting = invitingCaseIds.includes(selected.id);
     if (isInvited || isInviting) return;
 
@@ -121,10 +107,8 @@ export function InviteToCaseModal({
               </Then>
               <Else>
                 {cases.map((caseItem) => {
-                  const invitationStatus = invitationStatusByCaseId.get(caseItem.id);
-                  const isInvited =
-                    caseItem.invitedTutorIds.includes(tutorProfileId) ||
-                    !!invitationStatus;
+                  const invitationStatus = caseItem.tutorInvitation?.status;
+                  const isInvited = !!caseItem.tutorInvitation;
                   const isInviting = invitingCaseIds.includes(caseItem.id);
                   const isDisabled = isInvited || isInviting;
                   const isSelected = selected?.id === caseItem.id && !isDisabled;
@@ -161,8 +145,6 @@ export function InviteToCaseModal({
                         <InvitingStatusCell />
                       ) : invitationStatus ? (
                         <StatusBadge status={invitationStatus} />
-                      ) : isInvited ? (
-                        <StatusBadge status="pending" />
                       ) : null}
                     </button>
                   );
@@ -180,7 +162,7 @@ export function InviteToCaseModal({
             onClick={handleConfirm}
             disabled={
               !selected ||
-              selected.invitedTutorIds.includes(tutorProfileId) ||
+              !!selected.tutorInvitation ||
               invitingCaseIds.includes(selected.id)
             }
           >

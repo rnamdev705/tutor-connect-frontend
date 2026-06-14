@@ -121,6 +121,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
           return {
             ...old,
+            invitedCount: old.invitedCount + 1,
             invitedTutorIds:
               tutorProfileId && !old.invitedTutorIds.includes(tutorProfileId)
                 ? [...old.invitedTutorIds, tutorProfileId]
@@ -152,6 +153,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
           return {
             ...old,
+            invitedCount: Math.max(0, old.invitedCount - 1),
             invitedTutorIds: removed?.tutorProfileId
               ? old.invitedTutorIds.filter((id) => id !== removed.tutorProfileId)
               : old.invitedTutorIds,

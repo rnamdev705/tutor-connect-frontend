@@ -71,11 +71,10 @@ export type Case = {
     status: 'open' | 'matched' | 'closed';
     ownerId: string;
     ownerName: string;
-    invitedTutorIds: Array<string>;
-    invitationSummaries?: Array<{
-        tutorProfileId: string;
+    invitedCount: number;
+    tutorInvitation?: {
         status: 'pending' | 'accepted' | 'declined' | 'superseded';
-    }>;
+    } | null;
     createdAt: string | null;
     updatedAt: string | null;
 };
@@ -99,6 +98,7 @@ export type CaseListResponse = {
 };
 
 export type CaseDetail = Case & {
+    invitedTutorIds: Array<string>;
     invitations: Array<{
         id: string;
         caseId?: string;
@@ -187,7 +187,7 @@ export type InvitationWithCase = {
         status: 'open' | 'matched' | 'closed';
         ownerId: string;
         ownerName: string;
-        invitedTutorIds: Array<string>;
+        invitedCount: number;
         createdAt: string | null;
         updatedAt: string | null;
     };
@@ -398,6 +398,7 @@ export type GetCasesData = {
         subject?: string;
         level?: string;
         status?: 'open' | 'matched' | 'closed';
+        tutorProfileId?: string;
     };
     url: '/cases';
 };
