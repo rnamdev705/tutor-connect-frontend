@@ -81,7 +81,7 @@ export function UploadDocumentModal({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[90vh] flex-col gap-4 overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Document</DialogTitle>
           <DialogDescription>
@@ -96,7 +96,7 @@ export function UploadDocumentModal({
           }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
+          className={`relative flex min-h-[180px] flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors sm:p-8 ${
             dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25"
           }`}
         >

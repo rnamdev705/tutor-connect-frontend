@@ -159,10 +159,11 @@ export function TutorProfileView() {
       </div>
 
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <CardTitle className="text-base">Documents</CardTitle>
           <Button
             size="sm"
+            className="shrink-0"
             disabled={hasPendingDeletes}
             onClick={() => setUploadOpen(true)}
           >
@@ -211,7 +212,9 @@ export function TutorProfileView() {
                         key={d.id}
                         className={deleting ? "bg-muted/40 opacity-60" : undefined}
                       >
-                        <TableCell className="font-medium">{d.originalName}</TableCell>
+                        <TableCell className="max-w-[240px] truncate font-medium">
+                        {d.originalName}
+                      </TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatFileSize(d.sizeBytes)}
                         </TableCell>

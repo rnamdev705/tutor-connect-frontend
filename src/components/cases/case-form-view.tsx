@@ -373,8 +373,8 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
       </Card>
 
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="min-w-0">
             <CardTitle className="text-base">Documents</CardTitle>
             <CardDescription>
               Optional supporting files (max {MAX_FILE_SIZE_MB}MB each)
@@ -383,6 +383,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
           <Button
             size="sm"
             variant="outline"
+            className="shrink-0"
             disabled={formDisabled}
             onClick={() => setUploadOpen(true)}
           >
@@ -411,9 +412,9 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
                     key={`${file.name}-${index}`}
                     className="flex items-center justify-between rounded-lg border px-3 py-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <File className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{file.name}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="truncate text-sm">{file.name}</span>
                     </div>
                     <Button
                       variant="ghost"

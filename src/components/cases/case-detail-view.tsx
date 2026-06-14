@@ -290,7 +290,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       <When condition={caseIsDeleting}>
         <ActionBusyOverlay message="Deleting case..." />
       </When>
-      <div className={pageBusy ? "pointer-events-none select-none opacity-60" : undefined}>
+      <div
+        className={`space-y-6 ${pageBusy ? "pointer-events-none select-none opacity-60" : ""}`}
+      >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -350,8 +352,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
         <When condition={canManage}>
           <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+              <div className="min-w-0">
                 <CardTitle className="text-base">Invited Tutors</CardTitle>
                 <CardDescription>
                   {caseData.invitations.length + activePendingInvites.length} tutor(s) invited
@@ -359,6 +361,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </div>
               <Button
                 size="sm"
+                className="shrink-0"
                 disabled={inviteInProgress || hasPendingRevokes || caseIsDeleting}
                 onClick={() => setInviteOpen(true)}
               >
@@ -479,16 +482,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             </CardContent>
           </Card>
         </When>
-      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+        <Card className="shadow-sm lg:col-span-2">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="min-w-0">
             <CardTitle className="text-base">Documents</CardTitle>
             <CardDescription>{documentCount} file(s)</CardDescription>
           </div>
           <Button
             size="sm"
+            className="shrink-0"
             disabled={caseIsDeleting}
             onClick={() => setUploadOpen(true)}
           >
@@ -511,10 +514,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               />
             </Then>
             <Else>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>File Name</TableHead>
+                    <TableHead className="min-w-[140px]">File Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
@@ -536,14 +540,16 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       key={d.id}
                       className={deleting ? "bg-muted/40 opacity-60" : undefined}
                     >
-                      <TableCell className="font-medium">{d.originalName}</TableCell>
+                      <TableCell className="max-w-[200px] truncate font-medium">
+                        {d.originalName}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {d.mimeType.split("/").pop()?.toUpperCase()}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatFileSize(d.sizeBytes)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="max-w-[120px] truncate text-muted-foreground">
                         {d.uploadedByName}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -583,10 +589,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </Else>
           </If>
         </CardContent>
       </Card>
+      </div>
 
       </div>
 
