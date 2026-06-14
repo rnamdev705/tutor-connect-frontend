@@ -119,7 +119,7 @@ export const getAuthMeOptions = (options?: Options<GetAuthMeData>) => queryOptio
 /**
  * Update current user profile
  *
- * Updates the logged-in user's display name and/or password. Tutors also sync display name to their public tutor profile.
+ * Updates the logged-in user's display name, email, and/or password. Tutors also sync display name to their public tutor profile.
  */
 export const patchAuthMeMutation = (options?: Partial<Options<PatchAuthMeData>>): UseMutationOptions<PatchAuthMeResponse, PatchAuthMeError, Options<PatchAuthMeData>> => {
     const mutationOptions: UseMutationOptions<PatchAuthMeResponse, PatchAuthMeError, Options<PatchAuthMeData>> = {

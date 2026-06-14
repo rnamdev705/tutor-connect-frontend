@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, Eye, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   deleteCasesByIdMutation,
-  getCasesOptions,
-  getCasesQueryKey,
 } from "@/api/@tanstack/react-query.gen";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -45,12 +43,14 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { TruncatedListNotice } from "@/components/common/truncated-list-notice";
 import {
   DEFAULT_PAGE_SIZE,
-  MAX_FETCH_LIMIT,
   matchesText,
   paginateItems,
 } from "@/lib/pagination";
+import { allCasesListQueryOptions } from "@/lib/queries/list-queries";
+import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import type { Case } from "@/api/types.gen";
 import { toast } from "sonner";
@@ -114,6 +114,7 @@ function CaseTableRow({
 export function CasesListView() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [subject, setSubject] = useState("all");
@@ -124,10 +125,17 @@ export function CasesListView() {
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
   const { trackDelete, isDeleting, hasPending } = usePendingCaseDeletes();
 
+  useEffect(() => {
+    const initialSearch = searchParams.get("search");
+    if (initialSearch) {
+      setSearch(initialSearch);
+    }
+  }, [searchParams]);
+
   const deleteMutation = useMutation({
     ...deleteCasesByIdMutation(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success("Case deleted");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -141,26 +149,20 @@ export function CasesListView() {
     trackDelete(id, () => deleteMutation.mutateAsync({ path: { id } }));
   };
 
-  const { data, isLoading } = useQuery(
-    getCasesOptions({
-      query: {
-        page: 1,
-        limit: MAX_FETCH_LIMIT,
-        subject: subject !== "all" ? subject : undefined,
-        level: level !== "all" ? level : undefined,
-        status:
-          status !== "all"
-            ? (status as "open" | "matched" | "closed")
-            : undefined,
-      },
-    }),
-  );
+  const { data, isLoading } = useQuery(allCasesListQueryOptions);
 
   const cases = data?.data ?? [];
 
   const filtered = useMemo(
-    () => cases.filter((caseItem) => matchesText(caseItem.title, search)),
-    [cases, search],
+    () =>
+      cases.filter((caseItem) => {
+        if (!matchesText(caseItem.title, search)) return false;
+        if (subject !== "all" && caseItem.subject !== subject) return false;
+        if (level !== "all" && caseItem.level !== level) return false;
+        if (status !== "all" && caseItem.status !== status) return false;
+        return true;
+      }),
+    [cases, search, subject, level, status],
   );
 
   const pagination = useMemo(
@@ -170,8 +172,9 @@ export function CasesListView() {
 
   const hasActiveFilters =
     !!search || subject !== "all" || level !== "all" || status !== "all";
+  const showInitialEmpty = !isLoading && cases.length === 0 && !hasActiveFilters;
 
-  if (!isLoading && cases.length === 0 && !hasActiveFilters) {
+  if (showInitialEmpty) {
     return (
       <div className="space-y-6">
         <PageHeader title="My Cases" description="Manage your tutoring cases" />
@@ -198,6 +201,8 @@ export function CasesListView() {
           </Button>
         )}
       </PageHeader>
+
+      <TruncatedListNotice count={cases.length} />
 
       <Card className="shadow-sm">
         <CardContent className="pt-6">

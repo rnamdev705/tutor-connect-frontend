@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { If, Then, Else } from "react-if";
 import { Users } from "lucide-react";
-import { getTutorsOptions } from "@/api/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
@@ -12,27 +12,29 @@ import { EmptyState } from "@/components/common/empty-state";
 import { TutorCard } from "@/components/tutors/tutor-card";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { TutorGridSkeleton } from "@/components/common/content-skeletons";
+import { TruncatedListNotice } from "@/components/common/truncated-list-notice";
 import {
   DEFAULT_PAGE_SIZE,
-  MAX_FETCH_LIMIT,
   matchesText,
   matchesTextInList,
   paginateItems,
 } from "@/lib/pagination";
+import { allTutorsListQueryOptions } from "@/lib/queries/list-queries";
 
 export function TutorsDirectoryView() {
+  const searchParams = useSearchParams();
   const [nameSearch, setNameSearch] = useState("");
   const [qualSearch, setQualSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery(
-    getTutorsOptions({
-      query: {
-        page: 1,
-        limit: MAX_FETCH_LIMIT,
-      },
-    }),
-  );
+  useEffect(() => {
+    const initialSearch = searchParams.get("search");
+    if (initialSearch) {
+      setNameSearch(initialSearch);
+    }
+  }, [searchParams]);
+
+  const { data, isLoading } = useQuery(allTutorsListQueryOptions);
 
   const tutors = data?.data ?? [];
 
@@ -58,6 +60,8 @@ export function TutorsDirectoryView() {
         description="Browse qualified tutors for your cases"
         count={filtered.length}
       />
+
+      <TruncatedListNotice count={tutors.length} />
 
       <Card className="shadow-sm">
         <CardContent className="pt-6">

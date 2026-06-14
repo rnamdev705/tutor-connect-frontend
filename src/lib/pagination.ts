@@ -13,6 +13,39 @@ export function matchesTextInList(items: string[], query: string) {
   return items.some((item) => item.toLowerCase().includes(normalized));
 }
 
+export function matchesTutorSearch(
+  tutor: {
+    displayName: string;
+    qualifications: string[];
+    experiences: string[];
+    subjectsTaught: string[];
+    teachingBackground: string;
+  },
+  query: string,
+) {
+  if (!query.trim()) return true;
+  const normalized = query.trim().toLowerCase();
+  return (
+    matchesText(tutor.displayName, normalized) ||
+    matchesTextInList(tutor.qualifications, normalized) ||
+    matchesTextInList(tutor.experiences, normalized) ||
+    matchesTextInList(tutor.subjectsTaught, normalized) ||
+    tutor.teachingBackground.toLowerCase().includes(normalized)
+  );
+}
+
+export function matchesCaseSearch(
+  caseItem: { title: string; subject: string; location: string },
+  query: string,
+) {
+  if (!query.trim()) return true;
+  return (
+    matchesText(caseItem.title, query) ||
+    matchesText(caseItem.subject, query) ||
+    matchesText(caseItem.location, query)
+  );
+}
+
 export function paginateItems<T>(items: T[], page: number, pageSize: number) {
   const total = items.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

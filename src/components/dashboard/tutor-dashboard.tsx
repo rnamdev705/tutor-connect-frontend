@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Mail, Pencil } from "lucide-react";
-import { getInvitationsOptions } from "@/api/@tanstack/react-query.gen";
+import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +20,7 @@ export function TutorDashboard() {
   const tutor = useCurrentTutor();
 
   const { data, isLoading } = useQuery({
-    ...getInvitationsOptions(),
+    ...allInvitationsListQueryOptions,
     enabled: !!tutor,
   });
 

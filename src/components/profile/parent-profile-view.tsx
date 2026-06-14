@@ -12,7 +12,7 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
+import { allCasesListQueryOptions } from "@/lib/queries/list-queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,7 +32,7 @@ import { useAuth } from "@/lib/auth-context";
 export function ParentProfileView() {
   const { user } = useAuth();
   const { data, isLoading } = useQuery({
-    ...getCasesOptions(),
+    ...allCasesListQueryOptions,
     enabled: !!user,
   });
 

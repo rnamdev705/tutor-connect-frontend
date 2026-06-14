@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { LogOut, Search, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
@@ -18,20 +19,37 @@ import {
 export function AppTopNav() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [search, setSearch] = useState("");
 
   if (!user) return null;
 
   const roleLabel = user.role === "parent" ? "Parent" : "Tutor";
 
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = search.trim();
+    if (!query) return;
+
+    const params = new URLSearchParams({ search: query });
+    if (user.role === "parent") {
+      router.push(`/cases?${params.toString()}`);
+      return;
+    }
+
+    router.push(`/invitations?${params.toString()}`);
+  };
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="relative w-full max-w-md">
+      <form className="relative w-full max-w-md" onSubmit={handleSearchSubmit}>
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search cases, tutors..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={user.role === "parent" ? "Search cases..." : "Search invitations..."}
           className="h-9 bg-muted/50 pl-9"
         />
-      </div>
+      </form>
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
         <DropdownMenu>

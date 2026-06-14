@@ -8,7 +8,6 @@ import { ArrowLeft, FileText, Upload } from "lucide-react";
 import {
   deleteDocumentsByIdMutation,
   getCasesByCaseIdDocumentsOptions,
-  getCasesByIdOptions,
   postCasesByCaseIdDocumentsMutation,
 } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
+import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { toast } from "sonner";
@@ -105,7 +105,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
   const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
 
   const { data: caseData, isLoading: caseLoading, isError } = useQuery(
-    getCasesByIdOptions({ path: { id: caseId } }),
+    caseDetailQueryOptions(caseId),
   );
 
   const { data: documentsData, isLoading: docsLoading } = useQuery({

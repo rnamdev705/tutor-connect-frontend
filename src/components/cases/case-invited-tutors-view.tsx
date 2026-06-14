@@ -8,9 +8,7 @@ import { If, Then, Else } from "react-if";
 import { ArrowLeft, Eye, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
 import {
   deleteCasesByIdInvitationsByTutorIdMutation,
-  getCasesByIdOptions,
   getCasesByIdQueryKey,
-  getCasesQueryKey,
   postCasesByIdInvitationsMutation,
 } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
@@ -47,6 +45,8 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
+import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
+import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { usePendingTutorInvites } from "@/lib/hooks/use-pending-invites";
 import { usePendingInvitationRevokes } from "@/lib/hooks/use-pending-invitation-revokes";
 import { toast } from "sonner";
@@ -69,7 +69,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
     usePendingInvitationRevokes(caseId);
 
   const { data: caseData, isLoading, isError } = useQuery(
-    getCasesByIdOptions({ path: { id: caseId } }),
+    caseDetailQueryOptions(caseId),
   );
 
   const inviteMutation = useMutation({
@@ -103,7 +103,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
         },
       );
 
-      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success("Tutor invited successfully");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -135,7 +135,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
         },
       );
 
-      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success("Invitation removed");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),

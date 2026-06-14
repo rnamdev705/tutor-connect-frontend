@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { If, Then, Else } from "react-if";
 import { Loader2, Users } from "lucide-react";
-import { getTutorsOptions } from "@/api/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -23,6 +22,8 @@ import {
   getExperienceSummary,
   getQualificationSummary,
 } from "@/lib/format";
+import { matchesTutorSearch } from "@/lib/pagination";
+import { allTutorsListQueryOptions } from "@/lib/queries/list-queries";
 import type { TutorProfileSummary } from "@/api/types.gen";
 import type { AppStatus } from "@/components/common/status-badge";
 
@@ -50,11 +51,14 @@ export function InviteTutorModal({
   const [selected, setSelected] = useState<TutorProfileSummary | null>(null);
 
   const { data, isLoading } = useQuery({
-    ...getTutorsOptions({ query: { search: search || undefined } }),
+    ...allTutorsListQueryOptions,
     enabled: open,
   });
 
-  const tutors = data?.data ?? [];
+  const tutors = useMemo(
+    () => (data?.data ?? []).filter((tutor) => matchesTutorSearch(tutor, search)),
+    [data?.data, search],
+  );
 
   const invitedByTutorId = new Map(
     invitedTutors.map((entry) => [entry.tutorProfileId, entry.status]),

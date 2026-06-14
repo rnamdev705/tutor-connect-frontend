@@ -7,7 +7,6 @@ import { Download, FileText, Loader2, Mail } from "lucide-react";
 import {
   getTutorsByIdDocumentsOptions,
   getTutorsByIdOptions,
-  getCasesQueryKey,
   postCasesByIdInvitationsMutation,
 } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
@@ -35,6 +34,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { usePendingCaseInvites } from "@/lib/hooks/use-pending-invites";
 import { formatDate, formatFileSize } from "@/lib/format";
+import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { toast } from "sonner";
 
 interface TutorProfileDetailViewProps {
@@ -60,7 +60,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
   const inviteMutation = useMutation({
     ...postCasesByIdInvitationsMutation(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success(`Invitation sent to ${tutor?.displayName ?? "tutor"}`);
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),

@@ -11,7 +11,7 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
+import { allCasesListQueryOptions } from "@/lib/queries/list-queries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +29,7 @@ import { useAuth } from "@/lib/auth-context";
 export function ParentDashboard() {
   const { user } = useAuth();
 
-  const { data, isLoading } = useQuery(getCasesOptions());
+  const { data, isLoading } = useQuery(allCasesListQueryOptions);
 
   if (!user) return null;
 

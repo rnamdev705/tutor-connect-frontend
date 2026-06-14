@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Eye, Mail, MoreHorizontal } from "lucide-react";
-import {
-  getInvitationsOptions,
-  getInvitationsQueryKey,
-  patchInvitationsByIdMutation,
-} from "@/api/@tanstack/react-query.gen";
+import { patchInvitationsByIdMutation } from "@/api/@tanstack/react-query.gen";
+import { invalidateAllInvitationsList } from "@/lib/queries/invalidate";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -39,55 +36,63 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PaginationControls } from "@/components/common/pagination-controls";
+import { TruncatedListNotice } from "@/components/common/truncated-list-notice";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE, matchesText, paginateItems } from "@/lib/pagination";
+import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [invitationFilter, setInvitationFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery(
-    getInvitationsOptions({
-      query: {
-        page,
-        limit: DEFAULT_PAGE_SIZE,
-        search: search || undefined,
-        status:
-          invitationFilter !== "all"
-            ? (invitationFilter as "pending" | "accepted" | "declined" | "superseded")
-            : undefined,
-      },
-    }),
-  );
+  useEffect(() => {
+    const initialSearch = searchParams.get("search");
+    if (initialSearch) {
+      setSearch(initialSearch);
+    }
+  }, [searchParams]);
+
+  const { data, isLoading } = useQuery(allInvitationsListQueryOptions);
 
   const acceptMutation = useMutation({
     ...patchInvitationsByIdMutation(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getInvitationsQueryKey() });
+      void invalidateAllInvitationsList(queryClient);
       toast.success("Case invitation accepted");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
   const invitations = data?.data ?? [];
-  const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
-  const rows = useMemo(() => {
-    return invitations
-      .map((inv) => ({ invitation: inv, case: inv.case }))
-      .filter(({ case: c }) => {
-        if (status !== "all" && c.status !== status) return false;
-        return true;
-      });
-  }, [invitations, status]);
+  const filteredRows = useMemo(
+    () =>
+      invitations
+        .map((invitation) => ({ invitation, case: invitation.case }))
+        .filter(({ case: caseItem, invitation }) => {
+          if (!matchesText(caseItem.title, search)) return false;
+          if (status !== "all" && caseItem.status !== status) return false;
+          if (invitationFilter !== "all" && invitation.status !== invitationFilter) {
+            return false;
+          }
+          return true;
+        }),
+    [invitations, search, status, invitationFilter],
+  );
+
+  const pagination = useMemo(
+    () => paginateItems(filteredRows, page, DEFAULT_PAGE_SIZE),
+    [filteredRows, page],
+  );
 
   const handleAccept = (invitationId: string) => {
     acceptMutation.mutate({
@@ -128,8 +133,10 @@ export function InvitedCasesView() {
       <PageHeader
         title="Invited Cases"
         description="Cases you've been invited to tutor"
-        count={paginationMeta.total}
+        count={filteredRows.length}
       />
+
+      <TruncatedListNotice count={invitations.length} />
 
       <Card className="shadow-sm">
         <CardContent className="pt-6">
@@ -183,7 +190,7 @@ export function InvitedCasesView() {
             </Select>
           </div>
 
-          {rows.length === 0 ? (
+          {pagination.items.length === 0 ? (
             <EmptyState
               icon={Mail}
               title="No invited cases"
@@ -205,7 +212,7 @@ export function InvitedCasesView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map(({ case: c, invitation }) => (
+                {pagination.items.map(({ case: c, invitation }) => (
                   <TableRow key={invitation.id}>
                     <TableCell className="font-medium">{c.title}</TableCell>
                     <TableCell className="text-muted-foreground">{c.subject}</TableCell>
@@ -253,10 +260,10 @@ export function InvitedCasesView() {
             </Table>
           )}
           <PaginationControls
-            page={paginationMeta.page}
-            totalPages={paginationMeta.totalPages}
-            total={paginationMeta.total}
-            pageSize={paginationMeta.limit}
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            pageSize={DEFAULT_PAGE_SIZE}
             onPageChange={setPage}
           />
         </CardContent>

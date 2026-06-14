@@ -8,9 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, File, Info, Loader2, Trash2, Upload } from "lucide-react";
 import {
   getCasesByCaseIdDocumentsOptions,
-  getCasesByIdOptions,
   getCasesByIdQueryKey,
-  getCasesQueryKey,
   patchCasesByIdMutation,
   postCasesByCaseIdDocumentsMutation,
   postCasesMutation,
@@ -38,6 +36,8 @@ import { FormContentSkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
+import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
+import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
 import type { CaseStatus } from "@/lib/types";
 import type { CaseDetail } from "@/api/types.gen";
@@ -65,7 +65,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: existingCase, isLoading } = useQuery({
-    ...getCasesByIdOptions({ path: { id: caseId! } }),
+    ...caseDetailQueryOptions(caseId!),
     enabled: mode === "edit" && !!caseId,
   });
 
@@ -136,7 +136,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
     try {
       if (mode === "create") {
         const created = await createMutation.mutateAsync({ body });
-        queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+        void invalidateAllCasesList(queryClient);
         toast.success("Case created");
 
         if (pendingFiles.length > 0) {
@@ -163,7 +163,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
           (old: CaseDetail | undefined) =>
             old ? { ...old, ...updated, invitations: old.invitations } : old,
         );
-        queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+        void invalidateAllCasesList(queryClient);
         toast.success("Case updated");
         router.push(`/cases/${caseId}`);
       }

@@ -3,11 +3,7 @@
 import { useMemo, useState } from "react";
 import { If, Then, Else } from "react-if";
 import { Briefcase, Loader2 } from "lucide-react";
-import {
-  getCasesByIdOptions,
-  getCasesOptions,
-} from "@/api/@tanstack/react-query.gen";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +18,9 @@ import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
 import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
 import { formatCurrency } from "@/lib/format";
-import type { Case, CaseDetail } from "@/api/types.gen";
+import { matchesCaseSearch } from "@/lib/pagination";
+import { openCasesListQueryOptions } from "@/lib/queries/list-queries";
+import type { Case } from "@/api/types.gen";
 import type { AppStatus } from "@/components/common/status-badge";
 
 interface InviteToCaseModalProps {
@@ -46,49 +44,27 @@ export function InviteToCaseModal({
   const [selected, setSelected] = useState<Case | null>(null);
 
   const { data, isLoading } = useQuery({
-    ...getCasesOptions({
-      query: {
-        status: "open",
-        search: search || undefined,
-        limit: 100,
-      },
-    }),
+    ...openCasesListQueryOptions,
     enabled: open,
   });
 
-  const cases = data?.data ?? [];
-
-  const invitedCaseIds = useMemo(
-    () =>
-      cases
-        .filter((caseItem) => caseItem.invitedTutorIds.includes(tutorProfileId))
-        .map((caseItem) => caseItem.id),
-    [cases, tutorProfileId],
+  const cases = useMemo(
+    () => (data?.data ?? []).filter((caseItem) => matchesCaseSearch(caseItem, search)),
+    [data?.data, search],
   );
-
-  const invitationDetailQueries = useQueries({
-    queries: invitedCaseIds.map((caseId) => ({
-      ...getCasesByIdOptions({ path: { id: caseId } }),
-      enabled: open,
-      select: (caseDetail: CaseDetail) => {
-        const invitation = caseDetail.invitations.find(
-          (inv) => inv.tutorProfileId === tutorProfileId,
-        );
-        return invitation?.status ?? ("pending" as AppStatus);
-      },
-    })),
-  });
 
   const invitationStatusByCaseId = useMemo(() => {
     const map = new Map<string, AppStatus>();
-    invitedCaseIds.forEach((caseId, index) => {
-      const status = invitationDetailQueries[index]?.data;
-      if (status) {
-        map.set(caseId, status);
+    for (const caseItem of data?.data ?? []) {
+      const summary = caseItem.invitationSummaries?.find(
+        (entry) => entry.tutorProfileId === tutorProfileId,
+      );
+      if (summary) {
+        map.set(caseItem.id, summary.status);
       }
-    });
+    }
     return map;
-  }, [invitedCaseIds, invitationDetailQueries]);
+  }, [data?.data, tutorProfileId]);
 
   const handleConfirm = () => {
     if (!selected) return;

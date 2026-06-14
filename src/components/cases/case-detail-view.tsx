@@ -20,9 +20,7 @@ import {
   deleteCasesByIdMutation,
   deleteDocumentsByIdMutation,
   getCasesByCaseIdDocumentsOptions,
-  getCasesByIdOptions,
   getCasesByIdQueryKey,
-  getCasesQueryKey,
   postCasesByCaseIdDocumentsMutation,
   postCasesByIdInvitationsMutation,
 } from "@/api/@tanstack/react-query.gen";
@@ -63,6 +61,8 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
+import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
+import { invalidateAllCasesList, invalidateCaseData } from "@/lib/queries/invalidate";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
@@ -91,7 +91,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const { trackRevoke, isRevoking, hasPending: hasPendingRevokes } = usePendingInvitationRevokes(caseId);
 
   const { data: caseData, isLoading, isError } = useQuery(
-    getCasesByIdOptions({ path: { id: caseId } }),
+    caseDetailQueryOptions(caseId),
   );
 
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
@@ -130,7 +130,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         },
       );
 
-      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success("Tutor invited successfully");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -162,7 +162,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         },
       );
 
-      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateAllCasesList(queryClient);
       toast.success("Invitation removed");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -182,7 +182,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const deleteCaseMutation = useMutation({
     ...deleteCasesByIdMutation(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      void invalidateCaseData(queryClient, caseId);
       toast.success("Case deleted");
       router.push("/cases");
     },

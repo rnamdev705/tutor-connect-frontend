@@ -71,7 +71,7 @@ export const getAuthMe = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Update current user profile
  *
- * Updates the logged-in user's display name and/or password. Tutors also sync display name to their public tutor profile.
+ * Updates the logged-in user's display name, email, and/or password. Tutors also sync display name to their public tutor profile.
  */
 export const patchAuthMe = <ThrowOnError extends boolean = false>(options?: Options<PatchAuthMeData, ThrowOnError>): RequestResult<PatchAuthMeResponses, PatchAuthMeErrors, ThrowOnError> => (options?.client ?? client).patch<PatchAuthMeResponses, PatchAuthMeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

@@ -72,6 +72,10 @@ export type Case = {
     ownerId: string;
     ownerName: string;
     invitedTutorIds: Array<string>;
+    invitationSummaries?: Array<{
+        tutorProfileId: string;
+        status: 'pending' | 'accepted' | 'declined' | 'superseded';
+    }>;
     createdAt: string | null;
     updatedAt: string | null;
 };
@@ -389,6 +393,7 @@ export type GetCasesData = {
     query?: {
         page?: number;
         limit?: number;
+        skipCount?: boolean | 'true' | 'false';
         search?: string;
         subject?: string;
         level?: string;
@@ -819,6 +824,7 @@ export type GetInvitationsData = {
     query?: {
         page?: number;
         limit?: number;
+        skipCount?: boolean | 'true' | 'false';
         search?: string;
         status?: 'pending' | 'accepted' | 'declined' | 'superseded';
     };
@@ -892,6 +898,7 @@ export type GetTutorsData = {
     query?: {
         page?: number;
         limit?: number;
+        skipCount?: boolean | 'true' | 'false';
         /**
          * Single-field search across name, qualifications, experiences, teaching background, and subjects taught (for invite modals).
          */
