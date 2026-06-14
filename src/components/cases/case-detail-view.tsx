@@ -53,11 +53,12 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { ActionBusyOverlay } from "@/components/common/action-busy-overlay";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
-import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell } from "@/components/documents/pending-document-rows";
+import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell, RemovingStatusCell } from "@/components/documents/pending-document-rows";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
@@ -65,7 +66,9 @@ import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uplo
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { usePendingTutorInvites } from "@/lib/hooks/use-pending-invites";
+import { usePendingInvitationRevokes } from "@/lib/hooks/use-pending-invitation-revokes";
 import { toast } from "sonner";
+import type { CaseDetail } from "@/api/types.gen";
 
 interface CaseDetailViewProps {
   caseId: string;
@@ -85,6 +88,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
   const { trackDelete: trackCaseDelete, isDeleting: isDeletingCase } = usePendingCaseDeletes();
   const { pendingInvites, trackInvite } = usePendingTutorInvites(caseId);
+  const { trackRevoke, isRevoking, hasPending: hasPendingRevokes } = usePendingInvitationRevokes(caseId);
 
   const { data: caseData, isLoading, isError } = useQuery(
     getCasesByIdOptions({ path: { id: caseId } }),
@@ -97,9 +101,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   const inviteMutation = useMutation({
     ...postCasesByIdInvitationsMutation(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getCasesByIdQueryKey({ path: { id: caseId } }) });
-      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+    onSuccess: (invitation, variables) => {
+      const tutorProfileId = variables.body?.tutorProfileId;
+
+      queryClient.setQueryData(
+        getCasesByIdQueryKey({ path: { id: caseId } }),
+        (old: CaseDetail | undefined) => {
+          if (!old) return old;
+
+          if (
+            old.invitations.some(
+              (item) =>
+                item.id === invitation.id ||
+                (tutorProfileId && item.tutorProfileId === tutorProfileId),
+            )
+          ) {
+            return old;
+          }
+
+          return {
+            ...old,
+            invitedTutorIds:
+              tutorProfileId && !old.invitedTutorIds.includes(tutorProfileId)
+                ? [...old.invitedTutorIds, tutorProfileId]
+                : old.invitedTutorIds,
+            invitations: [{ ...invitation, caseId }, ...old.invitations],
+          };
+        },
+      );
+
+      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
       toast.success("Tutor invited successfully");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -107,8 +138,31 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   const revokeMutation = useMutation({
     ...deleteCasesByIdInvitationsByTutorIdMutation(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getCasesByIdQueryKey({ path: { id: caseId } }) });
+    onSuccess: (_, variables) => {
+      const tutorUserId = variables.path.tutorId;
+
+      queryClient.setQueryData(
+        getCasesByIdQueryKey({ path: { id: caseId } }),
+        (old: CaseDetail | undefined) => {
+          if (!old) return old;
+
+          const removed = old.invitations.find(
+            (inv) => inv.tutorUserId === tutorUserId,
+          );
+
+          return {
+            ...old,
+            invitedTutorIds: removed?.tutorProfileId
+              ? old.invitedTutorIds.filter((id) => id !== removed.tutorProfileId)
+              : old.invitedTutorIds,
+            invitations: old.invitations.filter(
+              (inv) => inv.tutorUserId !== tutorUserId,
+            ),
+          };
+        },
+      );
+
+      void queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
       toast.success("Invitation removed");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -200,30 +254,43 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     );
   }
 
-  const invitations = caseData.invitations.filter((inv) => {
-    if (!tutorSearch) return true;
-    return inv.tutor?.displayName
-      ?.toLowerCase()
-      .includes(tutorSearch.toLowerCase());
-  });
+  const activePendingInvites = pendingInvites.filter(
+    (pending) =>
+      !caseData.invitations.some(
+        (inv) => inv.tutorProfileId === pending.tutorProfileId,
+      ),
+  );
 
-  const filteredPendingInvites = pendingInvites.filter((inv) => {
-    if (!tutorSearch) return true;
-    return inv.tutorName.toLowerCase().includes(tutorSearch.toLowerCase());
-  });
+  const inviteInProgress = activePendingInvites.length > 0;
+
+  const sortedInvitations = [...caseData.invitations].sort(
+    (a, b) => Date.parse(b.invitedAt ?? "") - Date.parse(a.invitedAt ?? ""),
+  );
+
+  const invitations = tutorSearch
+    ? sortedInvitations.filter((inv) =>
+        inv.tutor?.displayName?.toLowerCase().includes(tutorSearch.toLowerCase()),
+      )
+    : sortedInvitations;
+
+  const filteredPendingInvites = tutorSearch
+    ? activePendingInvites.filter((inv) =>
+        inv.tutorName.toLowerCase().includes(tutorSearch.toLowerCase()),
+      )
+    : activePendingInvites;
 
   const documents = documentsData?.data ?? [];
   const documentCount = documents.length + pendingUploads.length;
   const showDocumentsTable = documentCount > 0;
+  const caseIsDeleting = isDeletingCase(caseId);
+  const pageBusy = caseIsDeleting;
 
   return (
-    <div className="space-y-6">
-      <When condition={isDeletingCase(caseId)}>
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Deleting case...
-        </div>
+    <div className="relative space-y-6">
+      <When condition={caseIsDeleting}>
+        <ActionBusyOverlay message="Deleting case..." />
       </When>
+      <div className={pageBusy ? "pointer-events-none select-none opacity-60" : undefined}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -236,7 +303,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             {caseData.subject} · {caseData.level}
           </p>
         </div>
-        <When condition={canManage && !isDeletingCase(caseId)}>
+        <When condition={canManage && !caseIsDeleting}>
           <div className="flex gap-2">
             <Button variant="outline" asChild>
               <Link href={`/cases/${caseData.id}/edit`}>
@@ -246,6 +313,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             </Button>
             <Button
               variant="destructive"
+              disabled={caseIsDeleting}
               onClick={() => setDeleteCaseOpen(true)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -286,10 +354,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               <div>
                 <CardTitle className="text-base">Invited Tutors</CardTitle>
                 <CardDescription>
-                  {caseData.invitations.length + pendingInvites.length} tutor(s) invited
+                  {caseData.invitations.length + activePendingInvites.length} tutor(s) invited
                 </CardDescription>
               </div>
-              <Button size="sm" onClick={() => setInviteOpen(true)}>
+              <Button
+                size="sm"
+                disabled={inviteInProgress || hasPendingRevokes || caseIsDeleting}
+                onClick={() => setInviteOpen(true)}
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Invite Tutor
               </Button>
@@ -324,27 +396,46 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         </div>
                       </li>
                     ))}
-                    {invitations.map((inv) => (
+                    {invitations.map((inv) => {
+                      const tutorInvitePending = pendingInvites.some(
+                        (pending) => pending.tutorProfileId === inv.tutorProfileId,
+                      );
+                      const revoking = isRevoking(inv.tutorUserId);
+                      const tutorName = inv.tutor?.displayName ?? "Unknown tutor";
+
+                      return (
                       <li
                         key={inv.id}
-                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                        className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${
+                          tutorInvitePending || revoking ? "bg-muted/40 opacity-60" : ""
+                        }`}
                       >
                         <UserAvatar
-                          name={inv.tutor?.displayName ?? "Tutor"}
+                          name={tutorName}
                           size="sm"
                         />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">
-                            {inv.tutor?.displayName ?? "Unknown tutor"}
+                            {tutorName}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            Invited {formatDate(inv.invitedAt)}
-                          </p>
+                          {revoking ? (
+                            <RemovingStatusCell />
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              Invited {formatDate(inv.invitedAt)}
+                            </p>
+                          )}
                         </div>
-                        <StatusBadge status={inv.status} />
+                        {revoking ? null : <StatusBadge status={inv.status} />}
+                        {revoking ? null : (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              disabled={caseIsDeleting || tutorInvitePending || revoking}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -362,12 +453,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() =>
-                                  revokeMutation.mutate({
-                                    path: {
-                                      id: caseId,
-                                      tutorId: inv.tutorUserId,
-                                    },
-                                  })
+                                  trackRevoke(inv.tutorUserId, tutorName, () =>
+                                    revokeMutation.mutateAsync({
+                                      path: {
+                                        id: caseId,
+                                        tutorId: inv.tutorUserId,
+                                      },
+                                    }),
+                                  )
                                 }
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -376,8 +469,10 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        )}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 </Else>
               </If>
@@ -392,7 +487,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             <CardTitle className="text-base">Documents</CardTitle>
             <CardDescription>{documentCount} file(s)</CardDescription>
           </div>
-          <Button size="sm" onClick={() => setUploadOpen(true)}>
+          <Button
+            size="sm"
+            disabled={caseIsDeleting}
+            onClick={() => setUploadOpen(true)}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Upload
           </Button>
@@ -405,7 +504,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 title="No documents yet"
                 description="Upload supporting files for this case."
                 actionLabel="Upload Document"
-                onAction={() => setUploadOpen(true)}
+                onAction={() => {
+                  if (!caseIsDeleting) setUploadOpen(true);
+                }}
                 variant="compact"
               />
             </Then>
@@ -431,7 +532,10 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                     const deleting = isDeletingDocument(d.id);
 
                     return (
-                    <TableRow key={d.id} className={deleting ? "bg-muted/40" : undefined}>
+                    <TableRow
+                      key={d.id}
+                      className={deleting ? "bg-muted/40 opacity-60" : undefined}
+                    >
                       <TableCell className="font-medium">{d.originalName}</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {d.mimeType.split("/").pop()?.toUpperCase()}
@@ -448,7 +552,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       <TableCell>
                         {deleting ? null : (
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={caseIsDeleting || deleting}
+                            >
                               <Download className="h-4 w-4" />
                             </Button>
                             {canDeleteDocument && (
@@ -456,7 +565,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-destructive"
+                                disabled={caseIsDeleting || deleting}
                                 onClick={() => {
+                                  if (deleting || caseIsDeleting) return;
                                   setDocumentToDelete(d.id);
                                   setDeleteDocOpen(true);
                                 }}
@@ -477,10 +588,15 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         </CardContent>
       </Card>
 
+      </div>
+
       <When condition={canManage}>
         <InviteTutorModal
           open={inviteOpen}
-          onOpenChange={setInviteOpen}
+          onOpenChange={(open) => {
+            if (open && (inviteInProgress || hasPendingRevokes || caseIsDeleting)) return;
+            setInviteOpen(open);
+          }}
           excludeIds={[
             ...caseData.invitedTutorIds,
             ...pendingInvites.map((invite) => invite.tutorProfileId),
@@ -497,7 +613,10 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       </When>
       <UploadDocumentModal
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(open) => {
+          if (open && caseIsDeleting) return;
+          setUploadOpen(open);
+        }}
         onUpload={(file) =>
           trackUpload(file, () =>
             uploadMutation.mutateAsync({
@@ -509,7 +628,10 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       />
       <DeleteConfirmationModal
         open={deleteCaseOpen}
-        onOpenChange={setDeleteCaseOpen}
+        onOpenChange={(open) => {
+          if (open && caseIsDeleting) return;
+          setDeleteCaseOpen(open);
+        }}
         title="Delete case"
         description={`"${caseData.title}" and all its documents and invitations will be permanently removed.`}
         onConfirm={handleDeleteCase}
@@ -517,6 +639,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       <DeleteConfirmationModal
         open={deleteDocOpen}
         onOpenChange={(open) => {
+          if (open && caseIsDeleting) return;
+          if (
+            open &&
+            documentToDelete &&
+            isDeletingDocument(documentToDelete)
+          ) {
+            return;
+          }
           setDeleteDocOpen(open);
           if (!open) setDocumentToDelete(null);
         }}

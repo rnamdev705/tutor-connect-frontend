@@ -64,6 +64,11 @@ export function usePendingTutorInvites(caseId?: string) {
     ) => {
       if (!caseId) return;
 
+      const existing = globalPendingTutorsByCase.get(caseId) ?? [];
+      if (existing.some((item) => item.tutorProfileId === tutorProfileId)) {
+        return;
+      }
+
       const id = crypto.randomUUID();
       addPendingTutorInvite(caseId, { id, tutorProfileId, tutorName });
       void invite().finally(() => removePendingTutorInvite(caseId, id));
@@ -71,7 +76,9 @@ export function usePendingTutorInvites(caseId?: string) {
     [caseId],
   );
 
-  return { pendingInvites, trackInvite };
+  const hasPending = pendingInvites.length > 0;
+
+  return { pendingInvites, trackInvite, hasPending };
 }
 
 /** Tracks inviting a tutor to a case from the tutor profile page. */
@@ -80,8 +87,19 @@ export function usePendingCaseInvites() {
 
   const trackInvite = useCallback(
     (caseId: string, caseTitle: string, invite: () => Promise<unknown>) => {
+      let shouldRun = false;
       const id = crypto.randomUUID();
-      setPendingInvites((current) => [...current, { id, caseId, caseTitle }]);
+
+      setPendingInvites((current) => {
+        if (current.some((item) => item.caseId === caseId)) {
+          return current;
+        }
+        shouldRun = true;
+        return [...current, { id, caseId, caseTitle }];
+      });
+
+      if (!shouldRun) return;
+
       void invite().finally(() => {
         setPendingInvites((current) => current.filter((item) => item.id !== id));
       });
@@ -94,5 +112,7 @@ export function usePendingCaseInvites() {
     [pendingInvites],
   );
 
-  return { pendingInvites, trackInvite, isInvitingToCase };
+  const hasPending = pendingInvites.length > 0;
+
+  return { pendingInvites, trackInvite, isInvitingToCase, hasPending };
 }

@@ -76,6 +76,8 @@ export function usePendingDocumentUploads(caseId?: string) {
     ? (globalPendingByCase.get(caseId) ?? [])
     : localPending;
 
+  const hasPending = pendingUploads.length > 0;
+
   const trackUpload = useCallback(
     (file: File, upload: () => Promise<unknown>) => {
       if (caseId) {
@@ -101,5 +103,5 @@ export function usePendingDocumentUploads(caseId?: string) {
     [caseId],
   );
 
-  return { pendingUploads, trackUpload };
+  return { pendingUploads, trackUpload, hasPending };
 }

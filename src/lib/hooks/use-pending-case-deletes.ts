@@ -7,11 +7,12 @@ export function usePendingCaseDeletes() {
 
   const trackDelete = useCallback(
     (caseId: string, deleteFn: () => Promise<unknown>) => {
-      setDeletingIds((current) =>
-        current.includes(caseId) ? current : [...current, caseId],
-      );
-      void deleteFn().finally(() => {
-        setDeletingIds((current) => current.filter((id) => id !== caseId));
+      setDeletingIds((current) => {
+        if (current.includes(caseId)) return current;
+        void deleteFn().finally(() => {
+          setDeletingIds((ids) => ids.filter((id) => id !== caseId));
+        });
+        return [...current, caseId];
       });
     },
     [],
@@ -22,5 +23,7 @@ export function usePendingCaseDeletes() {
     [deletingIds],
   );
 
-  return { trackDelete, isDeleting };
+  const hasPending = deletingIds.length > 0;
+
+  return { trackDelete, isDeleting, hasPending };
 }

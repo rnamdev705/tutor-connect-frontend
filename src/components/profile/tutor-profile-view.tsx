@@ -45,7 +45,7 @@ export function TutorProfileView() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const { pendingUploads, trackUpload } = usePendingDocumentUploads();
-  const { trackDelete, isDeleting } = usePendingDocumentDeletes();
+  const { trackDelete, isDeleting, hasPending: hasPendingDeletes } = usePendingDocumentDeletes();
 
   const { data: documentsData, isLoading: docsLoading } = useQuery({
     ...getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }),
@@ -161,7 +161,11 @@ export function TutorProfileView() {
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Documents</CardTitle>
-          <Button size="sm" onClick={() => setUploadOpen(true)}>
+          <Button
+            size="sm"
+            disabled={hasPendingDeletes}
+            onClick={() => setUploadOpen(true)}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Upload Document
           </Button>
@@ -179,7 +183,9 @@ export function TutorProfileView() {
                   title="No documents yet"
                   description="Upload qualifications or supporting files to your profile."
                   actionLabel="Upload Document"
-                  onAction={() => setUploadOpen(true)}
+                  onAction={() => {
+                    if (!hasPendingDeletes) setUploadOpen(true);
+                  }}
                   variant="compact"
                 />
               </Then>
@@ -201,7 +207,10 @@ export function TutorProfileView() {
                       const deleting = isDeleting(d.id);
 
                       return (
-                      <TableRow key={d.id} className={deleting ? "bg-muted/40" : undefined}>
+                      <TableRow
+                        key={d.id}
+                        className={deleting ? "bg-muted/40 opacity-60" : undefined}
+                      >
                         <TableCell className="font-medium">{d.originalName}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatFileSize(d.sizeBytes)}
@@ -212,18 +221,25 @@ export function TutorProfileView() {
                         <TableCell>
                           {deleting ? null : (
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive"
-                                onClick={() => {
-                                  setDocumentToDelete(d.id);
-                                  setDeleteOpen(true);
-                                }}
-                              >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={deleting}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              disabled={deleting}
+                              onClick={() => {
+                                if (deleting) return;
+                                setDocumentToDelete(d.id);
+                                setDeleteOpen(true);
+                              }}
+                            >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -242,12 +258,25 @@ export function TutorProfileView() {
 
       <UploadDocumentModal
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(open) => {
+          if (open && hasPendingDeletes) return;
+          setUploadOpen(open);
+        }}
         onUpload={handleUpload}
       />
       <DeleteConfirmationModal
         open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        onOpenChange={(open) => {
+          if (open && hasPendingDeletes) return;
+          if (
+            open &&
+            documentToDelete &&
+            isDeleting(documentToDelete)
+          ) {
+            return;
+          }
+          setDeleteOpen(open);
+        }}
         title="Delete document"
         description="This document will be permanently removed from your profile."
         onConfirm={handleDelete}

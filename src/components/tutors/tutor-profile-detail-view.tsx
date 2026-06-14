@@ -45,7 +45,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
   const queryClient = useQueryClient();
   const showInvite = user?.role === "parent";
   const [inviteOpen, setInviteOpen] = useState(false);
-  const { pendingInvites, trackInvite } = usePendingCaseInvites();
+  const { pendingInvites, trackInvite, hasPending } = usePendingCaseInvites();
 
   const { data: tutor, isLoading, isError } = useQuery(
     getTutorsByIdOptions({ path: { id: tutorId } }),
@@ -213,7 +213,11 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
               <CardTitle className="text-base">Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" onClick={() => setInviteOpen(true)}>
+              <Button
+                className="w-full"
+                disabled={hasPending}
+                onClick={() => setInviteOpen(true)}
+              >
                 <Mail className="mr-2 h-4 w-4" />
                 Invite To Case
               </Button>
@@ -237,7 +241,10 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
       <When condition={showInvite}>
         <InviteToCaseModal
           open={inviteOpen}
-          onOpenChange={setInviteOpen}
+          onOpenChange={(open) => {
+            if (open && hasPending) return;
+            setInviteOpen(open);
+          }}
           tutorProfileId={tutorId}
           tutorName={tutor.displayName}
           excludeCaseIds={pendingInvites.map((invite) => invite.caseId)}

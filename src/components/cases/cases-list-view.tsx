@@ -111,7 +111,7 @@ export function CasesListView() {
   const [status, setStatus] = useState("all");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
-  const { trackDelete, isDeleting } = usePendingCaseDeletes();
+  const { trackDelete, isDeleting, hasPending } = usePendingCaseDeletes();
 
   const deleteMutation = useMutation({
     ...deleteCasesByIdMutation(),
@@ -256,6 +256,7 @@ export function CasesListView() {
                     isDeleting={isDeleting(c.id)}
                     onNavigate={router.push}
                     onDelete={(item) => {
+                      if (hasPending || isDeleting(item.id)) return;
                       setCaseToDelete(item);
                       setDeleteOpen(true);
                     }}
@@ -269,7 +270,10 @@ export function CasesListView() {
 
       <DeleteConfirmationModal
         open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        onOpenChange={(open) => {
+          if (open && hasPending) return;
+          setDeleteOpen(open);
+        }}
         title="Delete case"
         description={
           caseToDelete

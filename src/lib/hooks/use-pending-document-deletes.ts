@@ -7,11 +7,12 @@ export function usePendingDocumentDeletes() {
 
   const trackDelete = useCallback(
     (documentId: string, deleteFn: () => Promise<unknown>) => {
-      setDeletingIds((current) =>
-        current.includes(documentId) ? current : [...current, documentId],
-      );
-      void deleteFn().finally(() => {
-        setDeletingIds((current) => current.filter((id) => id !== documentId));
+      setDeletingIds((current) => {
+        if (current.includes(documentId)) return current;
+        void deleteFn().finally(() => {
+          setDeletingIds((ids) => ids.filter((id) => id !== documentId));
+        });
+        return [...current, documentId];
       });
     },
     [],
@@ -22,5 +23,7 @@ export function usePendingDocumentDeletes() {
     [deletingIds],
   );
 
-  return { trackDelete, isDeleting };
+  const hasPending = deletingIds.length > 0;
+
+  return { trackDelete, isDeleting, hasPending };
 }

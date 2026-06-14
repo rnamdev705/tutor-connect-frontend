@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, File, Info, Loader2, Trash2, Upload } from "lu
 import {
   getCasesByCaseIdDocumentsOptions,
   getCasesByIdOptions,
+  getCasesByIdQueryKey,
   getCasesQueryKey,
   patchCasesByIdMutation,
   postCasesByCaseIdDocumentsMutation,
@@ -38,6 +39,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
 import type { CaseStatus } from "@/lib/types";
+import type { CaseDetail } from "@/api/types.gen";
 import { toast } from "sonner";
 
 interface CaseFormViewProps {
@@ -120,7 +122,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate() || isSaving) return;
 
     const body = {
       title: form.title.trim(),
@@ -147,19 +149,25 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
 
         router.push(`/cases/${created.id}`);
       } else if (caseId) {
-        await updateMutation.mutateAsync({
+        const updated = await updateMutation.mutateAsync({
           path: { id: caseId },
           body: {
             ...body,
             status: form.status,
           },
         });
+
+        queryClient.setQueryData(
+          getCasesByIdQueryKey({ path: { id: caseId } }),
+          (old: CaseDetail | undefined) =>
+            old ? { ...old, ...updated, invitations: old.invitations } : old,
+        );
         queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
         toast.success("Case updated");
         router.push(`/cases/${caseId}`);
       }
     } catch {
-      // Errors surfaced via mutation onError / toast in caller
+      // Errors surfaced via mutation onError
     }
   };
 
@@ -210,18 +218,24 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   };
 
   const isSaving =
-    mode === "create"
-      ? createMutation.isPending
-      : updateMutation.isPending;
+    mode === "create" ? createMutation.isPending : updateMutation.isPending;
+
+  const formDisabled = isSaving;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
+        {formDisabled ? (
+          <Button variant="ghost" size="icon" disabled>
             <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {mode === "create" ? "Create Case" : "Edit Case"}
@@ -247,6 +261,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
             <Input
               id="title"
               value={form.title}
+              disabled={formDisabled}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g. Weekly P5 Math tuition"
             />
@@ -260,9 +275,10 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
               <Label>Subject</Label>
               <Select
                 value={form.subject}
+                disabled={formDisabled}
                 onValueChange={(v) => v && setForm({ ...form, subject: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger disabled={formDisabled}>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -280,9 +296,10 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
               <Label>Level</Label>
               <Select
                 value={form.level}
+                disabled={formDisabled}
                 onValueChange={(v) => v && setForm({ ...form, level: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger disabled={formDisabled}>
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,6 +319,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
             <Input
               id="location"
               value={form.location}
+              disabled={formDisabled}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
               placeholder="e.g. Bishan"
             />
@@ -317,6 +335,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
               type="number"
               min={1}
               value={form.budgetPerHour}
+              disabled={formDisabled}
               onChange={(e) =>
                 setForm({ ...form, budgetPerHour: e.target.value })
               }
@@ -331,11 +350,12 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
               <Label>Status</Label>
               <Select
                 value={form.status}
+                disabled={formDisabled}
                 onValueChange={(v) =>
                   v && setForm({ ...form, status: v as CaseStatus })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger disabled={formDisabled}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -360,7 +380,12 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
               Optional supporting files (max {MAX_FILE_SIZE_MB}MB each)
             </CardDescription>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={formDisabled}
+            onClick={() => setUploadOpen(true)}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Upload
           </Button>
@@ -373,7 +398,9 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
                 title="No documents added"
                 description="Upload worksheets, syllabi, or other supporting materials."
                 actionLabel="Upload Document"
-                onAction={() => setUploadOpen(true)}
+                onAction={() => {
+                  if (!formDisabled) setUploadOpen(true);
+                }}
                 variant="compact"
               />
             </Then>
@@ -392,6 +419,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
+                      disabled={formDisabled}
                       onClick={() => removeDocument(index)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -423,11 +451,17 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" asChild>
-          <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
+        {formDisabled ? (
+          <Button variant="outline" disabled>
             Cancel
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button variant="outline" asChild>
+            <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
+              Cancel
+            </Link>
+          </Button>
+        )}
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
             <>
@@ -444,7 +478,10 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
 
       <UploadDocumentModal
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(open) => {
+          if (open && formDisabled) return;
+          setUploadOpen(open);
+        }}
         onUpload={handleDocumentUpload}
       />
     </div>
