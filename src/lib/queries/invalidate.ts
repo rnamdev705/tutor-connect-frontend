@@ -5,7 +5,9 @@ import {
   getInvitationsQueryKey,
   getTutorsQueryKey,
 } from "@/api/@tanstack/react-query.gen";
+import type { GetInvitationsResponse, InvitationWithCase } from "@/api/types.gen";
 import { MAX_FETCH_LIMIT } from "@/lib/pagination";
+import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
 
 const bulkCasesQueryKey = getCasesQueryKey({
   query: { page: 1, limit: MAX_FETCH_LIMIT, skipCount: true },
@@ -42,4 +44,21 @@ export function invalidateAllTutorsList(queryClient: QueryClient) {
 
 export function invalidateAllInvitationsList(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: bulkInvitationsQueryKey });
+}
+
+export function setInvitationInListCache(
+  queryClient: QueryClient,
+  updated: InvitationWithCase,
+) {
+  queryClient.setQueryData(
+    allInvitationsListQueryOptions.queryKey,
+    (old: GetInvitationsResponse | undefined) => {
+      if (!old) return old;
+
+      return {
+        ...old,
+        data: old.data.map((item) => (item.id === updated.id ? updated : item)),
+      };
+    },
+  );
 }

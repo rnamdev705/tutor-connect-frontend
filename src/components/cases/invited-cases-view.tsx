@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, Mail, MoreHorizontal } from "lucide-react";
+import { Check, Eye, Loader2, Mail, MoreHorizontal } from "lucide-react";
 import { patchInvitationsByIdMutation } from "@/api/@tanstack/react-query.gen";
-import { invalidateAllInvitationsList } from "@/lib/queries/invalidate";
+import type { GetInvitationsResponse } from "@/api/types.gen";
+import {
+  invalidateCaseData,
+  setInvitationInListCache,
+} from "@/lib/queries/invalidate";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -42,6 +46,11 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, matchesText, paginateItems } from "@/lib/pagination";
 import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
+import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
+import {
+  AcceptingStatusCell,
+  MatchingStatusCell,
+} from "@/components/documents/pending-document-rows";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
@@ -63,13 +72,34 @@ export function InvitedCasesView() {
 
   const { data, isLoading } = useQuery(allInvitationsListQueryOptions);
 
+  const { trackResponse, isResponding, getResponseAction } =
+    usePendingInvitationResponses();
+
   const acceptMutation = useMutation({
     ...patchInvitationsByIdMutation(),
-    onSuccess: () => {
-      void invalidateAllInvitationsList(queryClient);
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: allInvitationsListQueryOptions.queryKey,
+      });
+      const previous = queryClient.getQueryData<GetInvitationsResponse>(
+        allInvitationsListQueryOptions.queryKey,
+      );
+      return { previous };
+    },
+    onSuccess: (updated) => {
+      setInvitationInListCache(queryClient, updated);
+      void invalidateCaseData(queryClient, updated.caseId);
       toast.success("Case invitation accepted");
     },
-    onError: (error) => toast.error(getApiErrorMessage(error)),
+    onError: (error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          allInvitationsListQueryOptions.queryKey,
+          context.previous,
+        );
+      }
+      toast.error(getApiErrorMessage(error));
+    },
   });
 
   const invitations = data?.data ?? [];
@@ -95,10 +125,12 @@ export function InvitedCasesView() {
   );
 
   const handleAccept = (invitationId: string) => {
-    acceptMutation.mutate({
-      path: { id: invitationId },
-      body: { status: "accepted" },
-    });
+    trackResponse(invitationId, "accept", () =>
+      acceptMutation.mutateAsync({
+        path: { id: invitationId },
+        body: { status: "accepted" },
+      }),
+    );
   };
 
   if (user?.role !== "tutor") {
@@ -212,15 +244,33 @@ export function InvitedCasesView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagination.items.map(({ case: c, invitation }) => (
-                  <TableRow key={invitation.id}>
+                {pagination.items.map(({ case: c, invitation }) => {
+                  const responding = isResponding(invitation.id);
+                  const accepting =
+                    responding && getResponseAction(invitation.id) === "accept";
+
+                  return (
+                  <TableRow
+                    key={invitation.id}
+                    className={accepting ? "bg-muted/40" : undefined}
+                  >
                     <TableCell className="font-medium">{c.title}</TableCell>
                     <TableCell className="text-muted-foreground">{c.subject}</TableCell>
                     <TableCell className="text-muted-foreground">{c.level}</TableCell>
                     <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell>
-                      <StatusBadge status={invitation.status} />
+                      {accepting ? (
+                        <MatchingStatusCell />
+                      ) : (
+                        <StatusBadge status={c.status} />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {accepting ? (
+                        <AcceptingStatusCell />
+                      ) : (
+                        <StatusBadge status={invitation.status} />
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(invitation.invitedAt)}
@@ -228,18 +278,30 @@ export function InvitedCasesView() {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         {invitation.status === "pending" && (
-                          <Button
-                            size="sm"
-                            disabled={acceptMutation.isPending}
-                            onClick={() => handleAccept(invitation.id)}
-                          >
-                            <Check className="mr-1.5 h-3.5 w-3.5" />
-                            Accept
-                          </Button>
+                          accepting ? (
+                            <Button size="sm" disabled>
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              Accepting...
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              disabled={responding}
+                              onClick={() => handleAccept(invitation.id)}
+                            >
+                              <Check className="mr-1.5 h-3.5 w-3.5" />
+                              Accept
+                            </Button>
+                          )
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={accepting}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -255,7 +317,8 @@ export function InvitedCasesView() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           )}

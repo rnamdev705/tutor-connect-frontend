@@ -69,3 +69,21 @@ export function RemovingStatusCell() {
     </span>
   );
 }
+
+export function AcceptingStatusCell() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      Accepting...
+    </span>
+  );
+}
+
+export function MatchingStatusCell() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      Matching...
+    </span>
+  );
+}
