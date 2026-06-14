@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else } from "react-if";
-import { ArrowLeft, Download, FileText, Loader2, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, Upload } from "lucide-react";
 import {
   deleteDocumentsByIdMutation,
   getCasesByCaseIdDocumentsOptions,
@@ -44,6 +44,7 @@ import {
   PendingCaseDocumentRow,
   DeletingStatusCell,
 } from "@/components/documents/pending-document-rows";
+import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate, formatFileSize } from "@/lib/format";
@@ -309,7 +310,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                       <TableHead>Size</TableHead>
                       <TableHead>Uploaded By</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead className="w-24" />
+                      <TableHead className="w-32" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -358,25 +359,19 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                           </TableCell>
                           <TableCell>
                             {deleting ? null : (
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                                {canDeleteDocument && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive"
-                                    onClick={() => {
-                                      if (deleting) return;
-                                      setDocumentToDelete(row.id);
-                                      setDeleteOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
+                              <DocumentRowActions
+                                document={{
+                                  id: row.id,
+                                  originalName: row.fileName,
+                                  mimeType: row.mimeType,
+                                }}
+                                canDelete={canDeleteDocument}
+                                onDelete={() => {
+                                  if (deleting) return;
+                                  setDocumentToDelete(row.id);
+                                  setDeleteOpen(true);
+                                }}
+                              />
                             )}
                           </TableCell>
                         </TableRow>

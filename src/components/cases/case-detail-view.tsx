@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else, When } from "react-if";
 import {
-  Download,
   FileText,
   Loader2,
   MoreHorizontal,
@@ -58,6 +57,7 @@ import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell, RemovingStatusCell } from "@/components/documents/pending-document-rows";
+import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
@@ -537,7 +537,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="w-24" />
+                    <TableHead className="w-32" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -575,31 +575,20 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                       </TableCell>
                       <TableCell>
                         {deleting ? null : (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              disabled={caseIsDeleting || deleting}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            {canDeleteDocument && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive"
-                                disabled={caseIsDeleting || deleting}
-                                onClick={() => {
-                                  if (deleting || caseIsDeleting) return;
-                                  setDocumentToDelete(d.id);
-                                  setDeleteDocOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                          <DocumentRowActions
+                            document={{
+                              id: d.id,
+                              originalName: d.originalName,
+                              mimeType: d.mimeType,
+                            }}
+                            disabled={caseIsDeleting || deleting}
+                            canDelete={canDeleteDocument}
+                            onDelete={() => {
+                              if (deleting || caseIsDeleting) return;
+                              setDocumentToDelete(d.id);
+                              setDeleteDocOpen(true);
+                            }}
+                          />
                         )}
                       </TableCell>
                     </TableRow>
