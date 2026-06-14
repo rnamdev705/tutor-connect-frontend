@@ -3,9 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Briefcase, Loader2, MoreHorizontal, Plus } from "lucide-react";
-import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
-import { useQuery } from "@tanstack/react-query";
+import { Briefcase, Loader2, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import {
+  deleteCasesByIdMutation,
+  getCasesOptions,
+  getCasesQueryKey,
+} from "@/api/@tanstack/react-query.gen";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,30 +37,42 @@ import { PageHeader } from "@/components/common/page-header";
 import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
+import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
+import { DeletingStatusCell } from "@/components/documents/pending-document-rows";
 import { useAuth } from "@/lib/auth-context";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import type { Case } from "@/api/types.gen";
+import { toast } from "sonner";
 
 function CaseTableRow({
   caseItem,
   onNavigate,
+  onDelete,
+  isDeleting,
 }: {
   caseItem: Case;
   onNavigate: (path: string) => void;
+  onDelete: (caseItem: Case) => void;
+  isDeleting: boolean;
 }) {
   return (
-    <TableRow>
+    <TableRow className={isDeleting ? "bg-muted/40" : undefined}>
       <TableCell className="font-medium">{caseItem.title}</TableCell>
       <TableCell className="text-muted-foreground">{caseItem.subject}</TableCell>
       <TableCell className="text-muted-foreground">{caseItem.level}</TableCell>
       <TableCell>{formatCurrency(caseItem.budgetPerHour)}/hr</TableCell>
-      <TableCell><StatusBadge status={caseItem.status} /></TableCell>
+      <TableCell>
+        {isDeleting ? <DeletingStatusCell /> : <StatusBadge status={caseItem.status} />}
+      </TableCell>
       <TableCell>{caseItem.invitedTutorIds.length}</TableCell>
       <TableCell className="text-muted-foreground">
         {formatDate(caseItem.updatedAt)}
       </TableCell>
       <TableCell>
+        {!isDeleting && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -70,8 +86,16 @@ function CaseTableRow({
             <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
               Edit
             </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(caseItem)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -80,10 +104,31 @@ function CaseTableRow({
 export function CasesListView() {
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [subject, setSubject] = useState("all");
   const [level, setLevel] = useState("all");
   const [status, setStatus] = useState("all");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
+  const { trackDelete, isDeleting } = usePendingCaseDeletes();
+
+  const deleteMutation = useMutation({
+    ...deleteCasesByIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      toast.success("Case deleted");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const handleDeleteCase = () => {
+    if (!caseToDelete) return;
+    const id = caseToDelete.id;
+    setDeleteOpen(false);
+    setCaseToDelete(null);
+    trackDelete(id, () => deleteMutation.mutateAsync({ path: { id } }));
+  };
 
   const { data, isLoading } = useQuery(
     getCasesOptions({
@@ -208,7 +253,12 @@ export function CasesListView() {
                   <CaseTableRow
                     key={c.id}
                     caseItem={c}
+                    isDeleting={isDeleting(c.id)}
                     onNavigate={router.push}
+                    onDelete={(item) => {
+                      setCaseToDelete(item);
+                      setDeleteOpen(true);
+                    }}
                   />
                 ))}
               </TableBody>
@@ -216,6 +266,18 @@ export function CasesListView() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationModal
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete case"
+        description={
+          caseToDelete
+            ? `"${caseToDelete.title}" and all its documents and invitations will be permanently removed.`
+            : "This case and all related data will be permanently removed."
+        }
+        onConfirm={handleDeleteCase}
+      />
     </div>
   );
 }

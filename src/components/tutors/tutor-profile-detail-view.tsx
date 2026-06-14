@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { If, Then, Else, When } from "react-if";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Loader2, Mail } from "lucide-react";
 import {
   getTutorsByIdDocumentsOptions,
   getTutorsByIdOptions,
+  getCasesQueryKey,
+  postCasesByIdInvitationsMutation,
 } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +29,10 @@ import {
 import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
-import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
+import { InviteToCaseModal } from "@/components/modals/invite-to-case-modal";
 import { useAuth } from "@/lib/auth-context";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { usePendingCaseInvites } from "@/lib/hooks/use-pending-invites";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -38,8 +42,10 @@ interface TutorProfileDetailViewProps {
 
 export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const showInvite = user?.role === "parent";
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { pendingInvites, trackInvite } = usePendingCaseInvites();
 
   const { data: tutor, isLoading, isError } = useQuery(
     getTutorsByIdOptions({ path: { id: tutorId } }),
@@ -48,6 +54,15 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
   const { data: documentsData } = useQuery({
     ...getTutorsByIdDocumentsOptions({ path: { id: tutorId } }),
     enabled: !!tutor,
+  });
+
+  const inviteMutation = useMutation({
+    ...postCasesByIdInvitationsMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      toast.success(`Invitation sent to ${tutor?.displayName ?? "tutor"}`);
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
   if (isLoading) {
@@ -202,8 +217,17 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                 <Mail className="mr-2 h-4 w-4" />
                 Invite To Case
               </Button>
+              {pendingInvites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="mt-3 flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+                >
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Inviting to {invite.caseTitle}...
+                </div>
+              ))}
               <p className="mt-3 text-xs text-muted-foreground">
-                Invite this tutor from an open case detail page.
+                Choose one of your open cases to send an invitation.
               </p>
             </CardContent>
           </Card>
@@ -211,10 +235,20 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
       </div>
 
       <When condition={showInvite}>
-        <InviteTutorModal
+        <InviteToCaseModal
           open={inviteOpen}
           onOpenChange={setInviteOpen}
-          onInvite={() => toast.info("Open a case and use Invite Tutor there.")}
+          tutorProfileId={tutorId}
+          tutorName={tutor.displayName}
+          excludeCaseIds={pendingInvites.map((invite) => invite.caseId)}
+          onInvite={(caseItem) =>
+            trackInvite(caseItem.id, caseItem.title, () =>
+              inviteMutation.mutateAsync({
+                path: { id: caseItem.id },
+                body: { tutorProfileId: tutorId },
+              }),
+            )
+          }
         />
       </When>
     </div>

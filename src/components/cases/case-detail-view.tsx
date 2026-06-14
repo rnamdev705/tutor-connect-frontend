@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import {
   deleteCasesByIdInvitationsByTutorIdMutation,
+  deleteCasesByIdMutation,
+  deleteDocumentsByIdMutation,
   getCasesByCaseIdDocumentsOptions,
   getCasesByIdOptions,
   getCasesByIdQueryKey,
@@ -54,11 +56,15 @@ import { ErrorState } from "@/components/common/error-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
-import { PendingCaseDocumentRow } from "@/components/documents/pending-document-rows";
+import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
+import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell } from "@/components/documents/pending-document-rows";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
+import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
+import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
+import { usePendingTutorInvites } from "@/lib/hooks/use-pending-invites";
 import { toast } from "sonner";
 
 interface CaseDetailViewProps {
@@ -71,8 +77,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteCaseOpen, setDeleteCaseOpen] = useState(false);
+  const [deleteDocOpen, setDeleteDocOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [tutorSearch, setTutorSearch] = useState("");
   const { pendingUploads, trackUpload } = usePendingDocumentUploads(caseId);
+  const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
+  const { trackDelete: trackCaseDelete, isDeleting: isDeletingCase } = usePendingCaseDeletes();
+  const { pendingInvites, trackInvite } = usePendingTutorInvites(caseId);
 
   const { data: caseData, isLoading, isError } = useQuery(
     getCasesByIdOptions({ path: { id: caseId } }),
@@ -112,6 +124,44 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
+
+  const deleteCaseMutation = useMutation({
+    ...deleteCasesByIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      toast.success("Case deleted");
+      router.push("/cases");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteDocumentMutation = useMutation({
+    ...deleteDocumentsByIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: getCasesByCaseIdDocumentsOptions({ path: { caseId } }).queryKey,
+      });
+      toast.success("Document deleted");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const handleDeleteCase = () => {
+    setDeleteCaseOpen(false);
+    trackCaseDelete(caseId, () =>
+      deleteCaseMutation.mutateAsync({ path: { id: caseId } }),
+    );
+  };
+
+  const handleDeleteDocument = () => {
+    if (!documentToDelete) return;
+    const id = documentToDelete;
+    setDeleteDocOpen(false);
+    setDocumentToDelete(null);
+    trackDelete(id, () =>
+      deleteDocumentMutation.mutateAsync({ path: { id } }),
+    );
+  };
 
   if (isLoading) {
     return (
@@ -157,12 +207,23 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       .includes(tutorSearch.toLowerCase());
   });
 
+  const filteredPendingInvites = pendingInvites.filter((inv) => {
+    if (!tutorSearch) return true;
+    return inv.tutorName.toLowerCase().includes(tutorSearch.toLowerCase());
+  });
+
   const documents = documentsData?.data ?? [];
   const documentCount = documents.length + pendingUploads.length;
   const showDocumentsTable = documentCount > 0;
 
   return (
     <div className="space-y-6">
+      <When condition={isDeletingCase(caseId)}>
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Deleting case...
+        </div>
+      </When>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -175,13 +236,22 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             {caseData.subject} · {caseData.level}
           </p>
         </div>
-        <When condition={canManage}>
-          <Button variant="outline" asChild>
-            <Link href={`/cases/${caseData.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+        <When condition={canManage && !isDeletingCase(caseId)}>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/cases/${caseData.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteCaseOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
         </When>
       </div>
 
@@ -216,7 +286,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               <div>
                 <CardTitle className="text-base">Invited Tutors</CardTitle>
                 <CardDescription>
-                  {invitations.length} tutor(s) invited
+                  {caseData.invitations.length + pendingInvites.length} tutor(s) invited
                 </CardDescription>
               </div>
               <Button size="sm" onClick={() => setInviteOpen(true)}>
@@ -231,7 +301,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 placeholder="Search tutors..."
                 className="mb-4"
               />
-              <If condition={invitations.length === 0}>
+              <If condition={invitations.length === 0 && filteredPendingInvites.length === 0}>
                 <Then>
                   <EmptyState
                     icon={Users}
@@ -242,6 +312,18 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 </Then>
                 <Else>
                   <ul className="divide-y">
+                    {filteredPendingInvites.map((inv) => (
+                      <li
+                        key={inv.id}
+                        className="flex items-center gap-3 bg-muted/40 py-3 first:pt-0 last:pb-0"
+                      >
+                        <UserAvatar name={inv.tutorName} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{inv.tutorName}</p>
+                          <InvitingStatusCell />
+                        </div>
+                      </li>
+                    ))}
                     {invitations.map((inv) => (
                       <li
                         key={inv.id}
@@ -336,15 +418,20 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="w-12" />
+                    <TableHead className="w-24" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pendingUploads.map((upload) => (
                     <PendingCaseDocumentRow key={upload.id} upload={upload} />
                   ))}
-                  {documents.map((d) => (
-                    <TableRow key={d.id}>
+                  {documents.map((d) => {
+                    const canDeleteDocument =
+                      canManage || user?.id === d.uploadedById;
+                    const deleting = isDeletingDocument(d.id);
+
+                    return (
+                    <TableRow key={d.id} className={deleting ? "bg-muted/40" : undefined}>
                       <TableCell className="font-medium">{d.originalName}</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {d.mimeType.split("/").pop()?.toUpperCase()}
@@ -356,15 +443,33 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                         {d.uploadedByName}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatDate(d.createdAt)}
+                        {deleting ? <DeletingStatusCell /> : formatDate(d.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        {deleting ? null : (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            {canDeleteDocument && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => {
+                                  setDocumentToDelete(d.id);
+                                  setDeleteDocOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Else>
@@ -376,12 +481,17 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         <InviteTutorModal
           open={inviteOpen}
           onOpenChange={setInviteOpen}
-          excludeIds={caseData.invitedTutorIds}
-          onInvite={(tutorProfileId) =>
-            inviteMutation.mutate({
-              path: { id: caseId },
-              body: { tutorProfileId },
-            })
+          excludeIds={[
+            ...caseData.invitedTutorIds,
+            ...pendingInvites.map((invite) => invite.tutorProfileId),
+          ]}
+          onInvite={(tutor) =>
+            trackInvite(tutor.id, tutor.displayName, () =>
+              inviteMutation.mutateAsync({
+                path: { id: caseId },
+                body: { tutorProfileId: tutor.id },
+              }),
+            )
           }
         />
       </When>
@@ -396,6 +506,23 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             }),
           )
         }
+      />
+      <DeleteConfirmationModal
+        open={deleteCaseOpen}
+        onOpenChange={setDeleteCaseOpen}
+        title="Delete case"
+        description={`"${caseData.title}" and all its documents and invitations will be permanently removed.`}
+        onConfirm={handleDeleteCase}
+      />
+      <DeleteConfirmationModal
+        open={deleteDocOpen}
+        onOpenChange={(open) => {
+          setDeleteDocOpen(open);
+          if (!open) setDocumentToDelete(null);
+        }}
+        title="Delete document"
+        description="This document will be permanently removed from this case."
+        onConfirm={handleDeleteDocument}
       />
     </div>
   );

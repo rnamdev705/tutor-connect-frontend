@@ -42,3 +42,21 @@ export function PendingTutorDocumentRow({ upload }: { upload: PendingDocumentUpl
     </TableRow>
   );
 }
+
+export function DeletingStatusCell() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      Deleting...
+    </span>
+  );
+}
+
+export function InvitingStatusCell() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      Inviting...
+    </span>
+  );
+}

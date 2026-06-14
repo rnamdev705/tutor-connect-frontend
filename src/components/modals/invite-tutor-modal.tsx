@@ -27,7 +27,7 @@ interface InviteTutorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   excludeIds?: string[];
-  onInvite?: (tutorProfileId: string) => void;
+  onInvite?: (tutor: TutorProfileSummary) => void;
 }
 
 export function InviteTutorModal({
@@ -48,7 +48,7 @@ export function InviteTutorModal({
 
   const handleConfirm = () => {
     if (selected) {
-      onInvite?.(selected.id);
+      onInvite?.(selected);
       setSelected(null);
       setSearch("");
       onOpenChange(false);

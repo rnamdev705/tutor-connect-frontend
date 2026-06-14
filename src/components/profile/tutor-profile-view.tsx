@@ -29,10 +29,11 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
-import { PendingTutorDocumentRow } from "@/components/documents/pending-document-rows";
+import { PendingTutorDocumentRow, DeletingStatusCell } from "@/components/documents/pending-document-rows";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
+import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ export function TutorProfileView() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const { pendingUploads, trackUpload } = usePendingDocumentUploads();
+  const { trackDelete, isDeleting } = usePendingDocumentDeletes();
 
   const { data: documentsData, isLoading: docsLoading } = useQuery({
     ...getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }),
@@ -60,7 +62,16 @@ export function TutorProfileView() {
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
-  const deleteMutation = useMutation(deleteDocumentsByIdMutation());
+  const deleteMutation = useMutation({
+    ...deleteDocumentsByIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }).queryKey,
+      });
+      toast.success("Document deleted");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
 
   if (!tutor) {
     return (
@@ -83,20 +94,10 @@ export function TutorProfileView() {
 
   const handleDelete = () => {
     if (!documentToDelete) return;
-    deleteMutation.mutate(
-      { path: { id: documentToDelete } },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: getTutorsByIdDocumentsOptions({ path: { id: tutor.id } }).queryKey,
-          });
-          toast.success("Document deleted");
-          setDeleteOpen(false);
-          setDocumentToDelete(null);
-        },
-        onError: (error) => toast.error(getApiErrorMessage(error)),
-      },
-    );
+    const id = documentToDelete;
+    setDeleteOpen(false);
+    setDocumentToDelete(null);
+    trackDelete(id, () => deleteMutation.mutateAsync({ path: { id } }));
   };
 
   return (
@@ -196,35 +197,41 @@ export function TutorProfileView() {
                     {pendingUploads.map((upload) => (
                       <PendingTutorDocumentRow key={upload.id} upload={upload} />
                     ))}
-                    {documents.map((d) => (
-                      <TableRow key={d.id}>
+                    {documents.map((d) => {
+                      const deleting = isDeleting(d.id);
+
+                      return (
+                      <TableRow key={d.id} className={deleting ? "bg-muted/40" : undefined}>
                         <TableCell className="font-medium">{d.originalName}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatFileSize(d.sizeBytes)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {formatDate(d.createdAt)}
+                          {deleting ? <DeletingStatusCell /> : formatDate(d.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => {
-                                setDocumentToDelete(d.id);
-                                setDeleteOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {deleting ? null : (
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => {
+                                  setDocumentToDelete(d.id);
+                                  setDeleteOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </Else>

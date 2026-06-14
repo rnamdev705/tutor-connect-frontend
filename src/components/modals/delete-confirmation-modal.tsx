@@ -37,7 +37,11 @@ export function DeleteConfirmationModal({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-white hover:bg-destructive/90"
-            onClick={onConfirm}
+            onClick={(event) => {
+              event.preventDefault();
+              onConfirm?.();
+              onOpenChange(false);
+            }}
           >
             Confirm Delete
           </AlertDialogAction>
