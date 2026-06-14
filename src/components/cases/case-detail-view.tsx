@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else, When } from "react-if";
 import {
   Download,
   FileText,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -14,6 +16,15 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import {
+  deleteCasesByIdInvitationsByTutorIdMutation,
+  getCasesByCaseIdDocumentsOptions,
+  getCasesByIdOptions,
+  getCasesByIdQueryKey,
+  getCasesQueryKey,
+  postCasesByCaseIdDocumentsMutation,
+  postCasesByIdInvitationsMutation,
+} from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,34 +55,86 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { useAuth } from "@/lib/auth-context";
-import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
-import { isTutorInvitedToCase } from "@/lib/data";
-import {
-  formatCurrency,
-  formatDate,
-  formatFileSize,
-  mockCaseDocuments,
-  mockInvitations,
-  mockTutors,
-} from "@/lib/mock-data";
-import type { Case } from "@/lib/types";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
 
 interface CaseDetailViewProps {
-  caseData: Case;
+  caseId: string;
 }
 
-export function CaseDetailView({ caseData }: CaseDetailViewProps) {
+export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const { user } = useAuth();
-  const tutor = useCurrentTutor();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [tutorSearch, setTutorSearch] = useState("");
+
+  const { data: caseData, isLoading, isError } = useQuery(
+    getCasesByIdOptions({ path: { id: caseId } }),
+  );
+
+  const { data: documentsData } = useQuery({
+    ...getCasesByCaseIdDocumentsOptions({ path: { caseId } }),
+    enabled: !!caseData,
+  });
+
+  const inviteMutation = useMutation({
+    ...postCasesByIdInvitationsMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getCasesByIdQueryKey({ path: { id: caseId } }) });
+      queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+      toast.success("Tutor invited successfully");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const revokeMutation = useMutation({
+    ...deleteCasesByIdInvitationsByTutorIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getCasesByIdQueryKey({ path: { id: caseId } }) });
+      toast.success("Invitation removed");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const uploadMutation = useMutation({
+    ...postCasesByCaseIdDocumentsMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: getCasesByCaseIdDocumentsOptions({ path: { caseId } }).queryKey,
+      });
+      toast.success("Document uploaded successfully");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isError || !caseData) {
+    return (
+      <ErrorState
+        title="Case not found"
+        message="This case does not exist or you do not have access."
+        actionLabel="Back to cases"
+        actionHref="/cases"
+      />
+    );
+  }
+
   const isParent = user?.role === "parent";
   const isOwner = user?.id === caseData.ownerId;
   const canManage = isParent && isOwner;
   const isInvitedTutor =
     user?.role === "tutor" &&
-    tutor != null &&
-    isTutorInvitedToCase(tutor.id, caseData.id);
+    caseData.invitations.some((inv) => inv.tutorUserId === user.id);
 
   if (user?.role === "tutor" && !isInvitedTutor) {
     return (
@@ -84,17 +147,14 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
     );
   }
 
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [tutorSearch, setTutorSearch] = useState("");
+  const invitations = caseData.invitations.filter((inv) => {
+    if (!tutorSearch) return true;
+    return inv.tutor?.displayName
+      ?.toLowerCase()
+      .includes(tutorSearch.toLowerCase());
+  });
 
-  const invitedTutors = mockTutors.filter((t) =>
-    caseData.invitedTutorIds.includes(t.id),
-  );
-  const documents = mockCaseDocuments.filter((d) => d.caseId === caseData.id);
-  const filteredTutors = invitedTutors.filter((t) =>
-    t.displayName.toLowerCase().includes(tutorSearch.toLowerCase()),
-  );
+  const documents = documentsData?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -151,7 +211,7 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
               <div>
                 <CardTitle className="text-base">Invited Tutors</CardTitle>
                 <CardDescription>
-                  {invitedTutors.length} tutor(s) invited
+                  {invitations.length} tutor(s) invited
                 </CardDescription>
               </div>
               <Button size="sm" onClick={() => setInviteOpen(true)}>
@@ -166,7 +226,7 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
                 placeholder="Search tutors..."
                 className="mb-4"
               />
-              <If condition={filteredTutors.length === 0}>
+              <If condition={invitations.length === 0}>
                 <Then>
                   <EmptyState
                     icon={Users}
@@ -177,44 +237,60 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
                 </Then>
                 <Else>
                   <ul className="divide-y">
-                    {filteredTutors.map((t) => {
-                      const inv = mockInvitations.find(
-                        (i) => i.caseId === caseData.id && i.tutorId === t.id,
-                      );
-                      const invitedDate = inv ? formatDate(inv.invitedAt) : "—";
-
-                      return (
-                        <li
-                          key={t.id}
-                          className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-                        >
-                          <UserAvatar name={t.displayName} size="sm" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{t.displayName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Invited {invitedDate}
-                            </p>
-                          </div>
-                          <StatusBadge status={inv?.status ?? "pending"} />
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/tutors/${t.id}`)}>
+                    {invitations.map((inv) => (
+                      <li
+                        key={inv.id}
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <UserAvatar
+                          name={inv.tutor?.displayName ?? "Tutor"}
+                          size="sm"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {inv.tutor?.displayName ?? "Unknown tutor"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Invited {formatDate(inv.invitedAt)}
+                          </p>
+                        </div>
+                        <StatusBadge status={inv.status} />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {inv.tutorProfileId && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/tutors/${inv.tutorProfileId}`)
+                                }
+                              >
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                            )}
+                            {inv.status !== "accepted" && (
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() =>
+                                  revokeMutation.mutate({
+                                    path: {
+                                      id: caseId,
+                                      tutorId: inv.tutorUserId,
+                                    },
+                                  })
+                                }
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Remove
                               </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </li>
-                      );
-                    })}
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </li>
+                    ))}
                   </ul>
                 </Else>
               </If>
@@ -261,16 +337,18 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
                 <TableBody>
                   {documents.map((d) => (
                     <TableRow key={d.id}>
-                      <TableCell className="font-medium">{d.fileName}</TableCell>
+                      <TableCell className="font-medium">{d.originalName}</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {d.fileType.split("/").pop()?.toUpperCase()}
+                        {d.mimeType.split("/").pop()?.toUpperCase()}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatFileSize(d.size)}
+                        {formatFileSize(d.sizeBytes)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{d.uploadedBy}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatDate(d.uploadedAt)}
+                        {d.uploadedByName}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(d.createdAt)}
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -291,13 +369,23 @@ export function CaseDetailView({ caseData }: CaseDetailViewProps) {
           open={inviteOpen}
           onOpenChange={setInviteOpen}
           excludeIds={caseData.invitedTutorIds}
-          onInvite={() => toast.success("Tutor invited successfully")}
+          onInvite={(tutorProfileId) =>
+            inviteMutation.mutate({
+              path: { id: caseId },
+              body: { tutorProfileId },
+            })
+          }
         />
       </When>
       <UploadDocumentModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onUpload={() => toast.success("Document uploaded successfully")}
+        onUpload={(file) =>
+          uploadMutation.mutate({
+            path: { caseId },
+            body: { file },
+          })
+        }
       />
     </div>
   );

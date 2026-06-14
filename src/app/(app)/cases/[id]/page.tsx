@@ -1,6 +1,4 @@
-import { notFound } from "next/navigation";
 import { CaseDetailView } from "@/components/cases/case-detail-view";
-import { getCaseById } from "@/lib/data";
 
 export default async function CaseDetailPage({
   params,
@@ -8,7 +6,5 @@ export default async function CaseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const caseData = getCaseById(id);
-  if (!caseData) notFound();
-  return <CaseDetailView caseData={caseData} />;
+  return <CaseDetailView caseId={id} />;
 }

@@ -69,8 +69,8 @@ export function AppTopNav() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 router.push("/login");
               }}
             >

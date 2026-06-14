@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/common/status-badge";
-import { formatDate } from "@/lib/mock-data";
-import type { Case } from "@/lib/types";
+import { formatDate } from "@/lib/format";
+import type { Case } from "@/api/types.gen";
 
 interface CasesTableProps {
   cases: Case[];

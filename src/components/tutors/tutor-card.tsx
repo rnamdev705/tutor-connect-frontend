@@ -11,11 +11,11 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import {
   getExperienceSummary,
   getQualificationSummary,
-} from "@/lib/mock-data";
-import type { TutorProfile } from "@/lib/types";
+} from "@/lib/format";
+import type { TutorProfileSummary } from "@/api/types.gen";
 
 interface TutorCardProps {
-  tutor: TutorProfile;
+  tutor: TutorProfileSummary;
 }
 
 export function TutorCard({ tutor }: TutorCardProps) {
@@ -38,8 +38,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
         </p>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <FileText className="h-3.5 w-3.5" />
-          {tutor.documents.length} supporting document
-          {tutor.documents.length !== 1 ? "s" : ""}
+          View profile for documents
         </div>
       </CardContent>
       <CardFooter>

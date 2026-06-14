@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import {
+  getAuthMeQueryKey,
+  getTutorsMeProfileOptions,
+  getTutorsMeProfileQueryKey,
+  patchAuthMeMutation,
+  putTutorsMeProfileMutation,
+} from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,36 +24,73 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
-import { getTutorByUserId } from "@/lib/data";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { SUBJECTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export function ProfileEditView() {
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isTutor = user?.role === "tutor";
-  const tutor = user && isTutor ? getTutorByUserId(user.id) : null;
 
-  const [form, setForm] = useState({
-    displayName: tutor?.displayName ?? user?.name ?? "",
-    email: user?.email ?? "",
-    teachingBackground: tutor?.teachingBackground ?? "",
-    yearsOfExperience: tutor?.yearsOfExperience?.toString() ?? "",
-    qualifications: tutor?.qualifications.join("\n") ?? "",
-    subjects: tutor?.subjectsTaught ?? [],
+  const { data: tutorProfile, isLoading } = useQuery({
+    ...getTutorsMeProfileOptions(),
+    enabled: isTutor,
   });
 
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [form, setForm] = useState({
+    displayName: user?.name ?? "",
+    teachingBackground: "",
+    yearsOfExperience: "",
+    qualifications: "",
+    subjects: [] as string[],
+  });
 
-  const handleSave = () => {
-    setSaveState("saving");
-    setTimeout(() => {
-      setSaveState("saved");
-      setTimeout(() => {
-        setSaveState("idle");
-        router.push("/profile");
-      }, 800);
-    }, 600);
+  useEffect(() => {
+    setForm({
+      displayName: tutorProfile?.displayName ?? user?.name ?? "",
+      teachingBackground: tutorProfile?.teachingBackground ?? "",
+      yearsOfExperience: tutorProfile?.yearsOfExperience?.toString() ?? "",
+      qualifications: tutorProfile?.qualifications.join("\n") ?? "",
+      subjects: tutorProfile?.subjectsTaught ?? [],
+    });
+  }, [tutorProfile, user?.name]);
+
+  const updateMeMutation = useMutation(patchAuthMeMutation());
+  const upsertProfileMutation = useMutation(putTutorsMeProfileMutation());
+
+  const handleSave = async () => {
+    try {
+      await updateMeMutation.mutateAsync({
+        body: { displayName: form.displayName.trim() },
+      });
+
+      if (isTutor) {
+        await upsertProfileMutation.mutateAsync({
+          body: {
+            displayName: form.displayName.trim(),
+            qualifications: form.qualifications
+              .split("\n")
+              .map((q) => q.trim())
+              .filter(Boolean),
+            teachingBackground: form.teachingBackground.trim(),
+            yearsOfExperience: form.yearsOfExperience
+              ? Number(form.yearsOfExperience)
+              : 0,
+            subjectsTaught: form.subjects,
+          },
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getTutorsMeProfileQueryKey() });
+      toast.success("Profile updated");
+      router.push("/profile");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+    }
   };
 
   const toggleSubject = (subject: string) => {
@@ -56,6 +101,16 @@ export function ProfileEditView() {
         : [...f.subjects, subject],
     }));
   };
+
+  const isSaving = updateMeMutation.isPending || upsertProfileMutation.isPending;
+
+  if (isTutor && isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -73,20 +128,12 @@ export function ProfileEditView() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {saveState === "saving" && (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          )}
-          {saveState === "saved" && (
-            <>
-              <Check className="h-4 w-4 text-emerald-600" />
-              <span className="text-emerald-600">All changes saved</span>
-            </>
-          )}
-        </div>
+        {isSaving && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Saving...
+          </div>
+        )}
       </div>
 
       <Card className="shadow-sm">
@@ -108,12 +155,7 @@ export function ProfileEditView() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
+              <Input id="email" type="email" value={user?.email ?? ""} disabled />
             </div>
           </div>
         </CardContent>
@@ -190,7 +232,16 @@ export function ProfileEditView() {
         <Button variant="outline" asChild>
           <Link href="/profile">Cancel</Link>
         </Button>
-        <Button onClick={handleSave}>Save Changes</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
+        </Button>
       </div>
     </div>
   );

@@ -42,7 +42,7 @@ export interface CaseInvitation {
   caseId: string;
   tutorId: string;
   invitedAt: string;
-  status: "pending" | "accepted" | "declined";
+  status: "pending" | "accepted" | "declined" | "superseded";
 }
 
 export interface Document {

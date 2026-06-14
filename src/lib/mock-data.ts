@@ -254,35 +254,10 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
-
-export function formatDate(date: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
-}
-
-export function getQualificationSummary(tutor: TutorProfile): string {
-  return tutor.qualifications[0] ?? "No qualifications listed";
-}
-
-export function getExperienceSummary(tutor: TutorProfile): string {
-  return `${tutor.yearsOfExperience} years · ${tutor.subjectsTaught.slice(0, 2).join(", ")}`;
-}
-
-export function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+export {
+  formatCurrency,
+  formatDate,
+  getExperienceSummary,
+  getInitials,
+  getQualificationSummary,
+} from "./format";

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Mail, Pencil } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { FileText, Loader2, Mail, Pencil } from "lucide-react";
+import { getInvitationsOptions } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,10 +14,14 @@ import {
 import { StatCard } from "@/components/common/stat-card";
 import { ErrorState } from "@/components/common/error-state";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
-import { getTutorDashboardStats } from "@/lib/data";
 
 export function TutorDashboard() {
   const tutor = useCurrentTutor();
+
+  const { data, isLoading } = useQuery({
+    ...getInvitationsOptions(),
+    enabled: !!tutor,
+  });
 
   if (!tutor) {
     return (
@@ -28,7 +34,21 @@ export function TutorDashboard() {
     );
   }
 
-  const stats = getTutorDashboardStats(tutor);
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const invitations = data?.data ?? [];
+  const stats = {
+    invited: invitations.length,
+    pending: invitations.filter((i) => i.status === "pending").length,
+    accepted: invitations.filter((i) => i.status === "accepted").length,
+    documents: 0,
+  };
 
   return (
     <div className="space-y-8">

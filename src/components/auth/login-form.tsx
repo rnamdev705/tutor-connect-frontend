@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AuthMobileLogo } from "@/components/auth/auth-branding-panel";
+import { PasswordInput } from "@/components/auth/password-input";
 import { useAuth } from "@/lib/auth-context";
 import { APP_NAME } from "@/lib/constants";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
@@ -83,11 +84,9 @@ export function LoginForm() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
               aria-invalid={!!errors.password}
               {...register("password")}
             />

@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { If, Then, Else } from "react-if";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, File, Info, Trash2, Upload } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, CheckCircle2, File, Info, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  getCasesByCaseIdDocumentsOptions,
+  getCasesByIdOptions,
+  getCasesQueryKey,
+  patchCasesByIdMutation,
+  postCasesByCaseIdDocumentsMutation,
+  postCasesMutation,
+} from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,35 +34,67 @@ import {
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
-import type { Case, CaseStatus } from "@/lib/types";
+import type { CaseStatus } from "@/lib/types";
 import { toast } from "sonner";
 
 interface CaseFormViewProps {
-  caseData?: Case;
+  caseId?: string;
   mode: "create" | "edit";
 }
 
-export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
+export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
-    title: caseData?.title ?? "",
-    subject: caseData?.subject ?? "",
-    level: caseData?.level ?? "",
-    location: caseData?.location ?? "",
-    budgetPerHour: caseData?.budgetPerHour?.toString() ?? "",
-    status: (caseData?.status ?? "open") as CaseStatus,
+    title: "",
+    subject: "",
+    level: "",
+    location: "",
+    budgetPerHour: "",
+    status: "open" as CaseStatus,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { data: existingCase, isLoading } = useQuery({
+    ...getCasesByIdOptions({ path: { id: caseId! } }),
+    enabled: mode === "edit" && !!caseId,
+  });
+
+  useEffect(() => {
+    if (existingCase) {
+      setForm({
+        title: existingCase.title,
+        subject: existingCase.subject,
+        level: existingCase.level,
+        location: existingCase.location,
+        budgetPerHour: String(existingCase.budgetPerHour),
+        status: existingCase.status,
+      });
+    }
+  }, [existingCase]);
 
   useEffect(() => {
     if (user?.role === "tutor") {
       router.replace("/unauthorized");
     }
   }, [user, router]);
+
+  const createMutation = useMutation({
+    ...postCasesMutation(),
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    ...patchCasesByIdMutation(),
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const uploadMutation = useMutation(postCasesByCaseIdDocumentsMutation());
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -67,12 +108,43 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    if (mode === "create") {
-      router.push("/cases");
-    } else {
-      router.push(`/cases/${caseData?.id}`);
+
+    const body = {
+      title: form.title.trim(),
+      subject: form.subject,
+      level: form.level,
+      location: form.location.trim(),
+      budgetPerHour: Number(form.budgetPerHour),
+    };
+
+    try {
+      if (mode === "create") {
+        const created = await createMutation.mutateAsync({ body });
+        for (const file of pendingFiles) {
+          await uploadMutation.mutateAsync({
+            path: { caseId: created.id },
+            body: { file },
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+        toast.success("Case created");
+        router.push(`/cases/${created.id}`);
+      } else if (caseId) {
+        await updateMutation.mutateAsync({
+          path: { id: caseId },
+          body: {
+            ...body,
+            status: form.status,
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
+        toast.success("Case updated");
+        router.push(`/cases/${caseId}`);
+      }
+    } catch {
+      // Errors surfaced via mutation onError / toast in caller
     }
   };
 
@@ -88,20 +160,47 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
     return null;
   }
 
+  if (mode === "edit" && isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   const handleDocumentUpload = (file: File) => {
-    setDocuments((prev) => [...prev, file]);
-    toast.success(`${file.name} added`);
+    if (mode === "create") {
+      setPendingFiles((prev) => [...prev, file]);
+      toast.success(`${file.name} added`);
+      return;
+    }
+    if (caseId) {
+      uploadMutation.mutate(
+        { path: { caseId }, body: { file } },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: getCasesByCaseIdDocumentsOptions({ path: { caseId } }).queryKey,
+            });
+            toast.success(`${file.name} uploaded`);
+          },
+          onError: (error) => toast.error(getApiErrorMessage(error)),
+        },
+      );
+    }
   };
 
   const removeDocument = (index: number) => {
-    setDocuments((prev) => prev.filter((_, i) => i !== index));
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href={mode === "edit" ? `/cases/${caseData?.id}` : "/cases"}>
+          <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -111,233 +210,218 @@ export function CaseFormView({ caseData, mode }: CaseFormViewProps) {
           </h1>
           <p className="text-sm text-muted-foreground">
             {mode === "create"
-              ? "Fill in the details to create a new tutoring case."
-              : "Update your case information."}
+              ? "Post a new tutoring case for tutors to respond to."
+              : "Update your case details."}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Case Information</CardTitle>
-              <CardDescription>
-                Provide details about the tutoring requirement.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="e.g. GCSE Maths Exam Preparation"
-                />
-                {errors.title && (
-                  <p className="text-xs text-destructive">{errors.title}</p>
-                )}
-              </div>
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Case Details</CardTitle>
+          <CardDescription>
+            Provide information about the tutoring requirement.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="e.g. Weekly P5 Math tuition"
+            />
+            {errors.title && (
+              <p className="text-xs text-destructive">{errors.title}</p>
+            )}
+          </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Select
-                    value={form.subject}
-                    onValueChange={(v) => v && setForm({ ...form, subject: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.subject && (
-                    <p className="text-xs text-destructive">{errors.subject}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Level</Label>
-                  <Select
-                    value={form.level}
-                    onValueChange={(v) => v && setForm({ ...form, level: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LEVELS.map((l) => (
-                        <SelectItem key={l} value={l}>{l}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.level && (
-                    <p className="text-xs text-destructive">{errors.level}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="e.g. London, SW1 or Online"
-                />
-                {errors.location && (
-                  <p className="text-xs text-destructive">{errors.location}</p>
-                )}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="budget">Budget Per Hour (£)</Label>
-                  <Input
-                    id="budget"
-                    type="number"
-                    min="1"
-                    value={form.budgetPerHour}
-                    onChange={(e) =>
-                      setForm({ ...form, budgetPerHour: e.target.value })
-                    }
-                    placeholder="45"
-                  />
-                  {errors.budgetPerHour && (
-                    <p className="text-xs text-destructive">{errors.budgetPerHour}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={form.status}
-                    onValueChange={(v) =>
-                      v && setForm({ ...form, status: v as CaseStatus })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="matched">Matched</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm mt-6">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Documents</CardTitle>
-                <CardDescription>
-                  Upload supporting files for this case (optional)
-                </CardDescription>
-              </div>
-              <Button type="button" size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <If condition={documents.length === 0}>
-                <Then>
-                  <EmptyState
-                    icon={Upload}
-                    title="No documents added yet"
-                    description={`PDF, DOC, DOCX, PNG, JPEG · Max ${MAX_FILE_SIZE_MB}MB`}
-                    actionLabel="Upload document"
-                    onAction={() => setUploadOpen(true)}
-                    variant="compact"
-                  />
-                </Then>
-                <Else>
-                  <ul className="space-y-2">
-                  {documents.map((file, index) => (
-                    <li
-                      key={`${file.name}-${index}`}
-                      className="flex items-center justify-between rounded-lg border px-3 py-2"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <File className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(file.size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-destructive"
-                        onClick={() => removeDocument(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </li>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Select
+                value={form.subject}
+                onValueChange={(v) => v && setForm({ ...form, subject: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUBJECTS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
-                </ul>
-                </Else>
-              </If>
-            </CardContent>
-          </Card>
-        </div>
+                </SelectContent>
+              </Select>
+              {errors.subject && (
+                <p className="text-xs text-destructive">{errors.subject}</p>
+              )}
+            </div>
 
-        <div className="space-y-4">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Info className="h-4 w-4" />
-                Form Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>Be specific in your title to attract the right tutors.</p>
-              <p>Set a competitive budget based on subject and level.</p>
-              <p>Include location details for in-person tutoring.</p>
-            </CardContent>
-          </Card>
+            <div className="space-y-2">
+              <Label>Level</Label>
+              <Select
+                value={form.level}
+                onValueChange={(v) => v && setForm({ ...form, level: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEVELS.map((l) => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.level && (
+                <p className="text-xs text-destructive">{errors.level}</p>
+              )}
+            </div>
+          </div>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Validation Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {validationItems.map((item) => (
-                <div key={item.label} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2
-                    className={`h-4 w-4 ${
-                      item.valid ? "text-emerald-600" : "text-muted-foreground/40"
-                    }`}
-                  />
-                  <span className={item.valid ? "text-foreground" : "text-muted-foreground"}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="e.g. Bishan"
+            />
+            {errors.location && (
+              <p className="text-xs text-destructive">{errors.location}</p>
+            )}
+          </div>
 
-      <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-4 backdrop-blur">
+          <div className="space-y-2">
+            <Label htmlFor="budget">Budget per hour (£)</Label>
+            <Input
+              id="budget"
+              type="number"
+              min={1}
+              value={form.budgetPerHour}
+              onChange={(e) =>
+                setForm({ ...form, budgetPerHour: e.target.value })
+              }
+            />
+            {errors.budgetPerHour && (
+              <p className="text-xs text-destructive">{errors.budgetPerHour}</p>
+            )}
+          </div>
+
+          {mode === "edit" && (
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(v) =>
+                  v && setForm({ ...form, status: v as CaseStatus })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Matched status is set automatically when a tutor accepts an invitation.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Documents</CardTitle>
+            <CardDescription>
+              Optional supporting files (max {MAX_FILE_SIZE_MB}MB each)
+            </CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <If condition={pendingFiles.length === 0}>
+            <Then>
+              <EmptyState
+                icon={File}
+                title="No documents added"
+                description="Upload worksheets, syllabi, or other supporting materials."
+                actionLabel="Upload Document"
+                onAction={() => setUploadOpen(true)}
+                variant="compact"
+              />
+            </Then>
+            <Else>
+              <ul className="space-y-2">
+                {pendingFiles.map((file, index) => (
+                  <li
+                    key={`${file.name}-${index}`}
+                    className="flex items-center justify-between rounded-lg border px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <File className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{file.name}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeDocument(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </Else>
+          </If>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Validation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {validationItems.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-sm">
+                <CheckCircle2
+                  className={`h-4 w-4 ${item.valid ? "text-emerald-600" : "text-muted-foreground"}`}
+                />
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-3">
         <Button variant="outline" asChild>
-          <Link href={mode === "edit" ? `/cases/${caseData?.id}` : "/cases"}>
+          <Link href={mode === "edit" && caseId ? `/cases/${caseId}` : "/cases"}>
             Cancel
           </Link>
         </Button>
-        <Button onClick={handleSave}>Save</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : mode === "create" ? (
+            "Create Case"
+          ) : (
+            "Save Changes"
+          )}
+        </Button>
       </div>
 
       <UploadDocumentModal

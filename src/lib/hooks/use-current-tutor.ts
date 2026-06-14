@@ -1,14 +1,20 @@
 "use client";
 
+import { getTutorsMeProfileOptions } from "@/api/@tanstack/react-query.gen";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { getTutorByUserId } from "@/lib/data";
-import type { TutorProfile } from "@/lib/types";
 
 /**
- * Returns the {@link TutorProfile} linked to the signed-in tutor user.
- * Undefined when logged out or when the user role is not tutor.
+ * Returns the signed-in tutor's profile from the API.
+ * Undefined when logged out, not a tutor, or profile is still loading / missing.
  */
-export function useCurrentTutor(): TutorProfile | undefined {
+export function useCurrentTutor() {
   const { user } = useAuth();
-  return user ? getTutorByUserId(user.id) : undefined;
+
+  const { data } = useQuery({
+    ...getTutorsMeProfileOptions(),
+    enabled: user?.role === "tutor",
+  });
+
+  return user?.role === "tutor" ? data : undefined;
 }

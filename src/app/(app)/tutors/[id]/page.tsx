@@ -1,14 +1,10 @@
-import { notFound } from "next/navigation";
 import { TutorProfileDetailView } from "@/components/tutors/tutor-profile-detail-view";
-import { getTutorById } from "@/lib/data";
 
-export default async function TutorDetailPage({
+export default async function TutorProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const tutor = getTutorById(id);
-  if (!tutor) notFound();
-  return <TutorProfileDetailView tutor={tutor} />;
+  return <TutorProfileDetailView tutorId={id} />;
 }

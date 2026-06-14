@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AuthMobileLogo } from "@/components/auth/auth-branding-panel";
+import { PasswordInput } from "@/components/auth/password-input";
 import { useAuth } from "@/lib/auth-context";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
@@ -154,11 +155,9 @@ export function RegisterForm() {
 
           <div className="space-y-2">
             <Label htmlFor="register-password">Password</Label>
-            <Input
+            <PasswordInput
               id="register-password"
-              type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
               aria-invalid={!!errors.password}
               {...register("password")}
             />
@@ -173,11 +172,9 @@ export function RegisterForm() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
               aria-invalid={!!errors.confirmPassword}
               {...register("confirmPassword")}
             />

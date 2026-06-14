@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Briefcase, MoreHorizontal, Plus } from "lucide-react";
+import { Briefcase, Loader2, MoreHorizontal, Plus } from "lucide-react";
+import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,10 +34,9 @@ import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
-import { getCasesByOwnerId } from "@/lib/data";
-import { formatCurrency, formatDate } from "@/lib/mock-data";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
-import type { Case } from "@/lib/types";
+import type { Case } from "@/api/types.gen";
 
 function CaseTableRow({
   caseItem,
@@ -84,20 +85,33 @@ export function CasesListView() {
   const [level, setLevel] = useState("all");
   const [status, setStatus] = useState("all");
 
-  const cases = getCasesByOwnerId(user?.id ?? "");
+  const { data, isLoading } = useQuery(
+    getCasesOptions({
+      query: {
+        search: search || undefined,
+        subject: subject !== "all" ? subject : undefined,
+        level: level !== "all" ? level : undefined,
+        status:
+          status !== "all"
+            ? (status as "open" | "matched" | "closed")
+            : undefined,
+      },
+    }),
+  );
 
-  const filtered = useMemo(() => {
-    return cases.filter((c) => {
-      if (search && !c.title.toLowerCase().includes(search.toLowerCase()))
-        return false;
-      if (subject !== "all" && c.subject !== subject) return false;
-      if (level !== "all" && c.level !== level) return false;
-      if (status !== "all" && c.status !== status) return false;
-      return true;
-    });
-  }, [cases, search, subject, level, status]);
+  const cases = data?.data ?? [];
 
-  if (cases.length === 0) {
+  const filtered = useMemo(() => cases, [cases]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (cases.length === 0 && !search && subject === "all" && level === "all" && status === "all") {
     return (
       <div className="space-y-6">
         <PageHeader title="My Cases" description="Manage your tutoring cases" />
@@ -115,12 +129,14 @@ export function CasesListView() {
   return (
     <div className="space-y-6">
       <PageHeader title="My Cases" count={filtered.length}>
-        <Button asChild>
-          <Link href="/cases/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Case
-          </Link>
-        </Button>
+        {user?.role === "parent" && (
+          <Button asChild>
+            <Link href="/cases/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Case
+            </Link>
+          </Button>
+        )}
       </PageHeader>
 
       <Card className="shadow-sm">

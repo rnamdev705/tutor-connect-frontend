@@ -2,8 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { If, Then, Else, When } from "react-if";
-import { Check, Mail, MoreHorizontal } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Loader2, Mail, MoreHorizontal } from "lucide-react";
+import {
+  getInvitationsOptions,
+  getInvitationsQueryKey,
+  patchInvitationsByIdMutation,
+} from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,141 +37,76 @@ import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
-import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
-import { getInvitationsForTutor } from "@/lib/data";
-import {
-  formatCurrency,
-  formatDate,
-  mockCases,
-} from "@/lib/mock-data";
-import type { CaseInvitation } from "@/lib/types";
+import { useAuth } from "@/lib/auth-context";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
-  const tutor = useCurrentTutor();
+  const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [invitationFilter, setInvitationFilter] = useState("all");
-  const [invitations, setInvitations] = useState<CaseInvitation[]>(() =>
-    tutor ? getInvitationsForTutor(tutor.id) : [],
+
+  const { data, isLoading } = useQuery(
+    getInvitationsOptions({
+      query: {
+        search: search || undefined,
+        status:
+          invitationFilter !== "all"
+            ? (invitationFilter as "pending" | "accepted" | "declined" | "superseded")
+            : undefined,
+      },
+    }),
   );
 
-  const handleAccept = (invitationId: string) => {
-    setInvitations((prev) =>
-      prev.map((inv) =>
-        inv.id === invitationId ? { ...inv, status: "accepted" as const } : inv,
-      ),
-    );
-    toast.success("Case invitation accepted");
-  };
+  const acceptMutation = useMutation({
+    ...patchInvitationsByIdMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getInvitationsQueryKey() });
+      toast.success("Case invitation accepted");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const invitations = data?.data ?? [];
 
   const rows = useMemo(() => {
     return invitations
-      .map((inv) => {
-        const caseData = mockCases.find((c) => c.id === inv.caseId);
-        if (!caseData) return null;
-        return { invitation: inv, case: caseData };
-      })
-      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .map((inv) => ({ invitation: inv, case: inv.case }))
       .filter(({ case: c, invitation }) => {
         if (search && !c.title.toLowerCase().includes(search.toLowerCase()))
           return false;
         if (status !== "all" && c.status !== status) return false;
-        if (invitationFilter !== "all" && invitation.status !== invitationFilter)
-          return false;
         return true;
       });
-  }, [invitations, search, status, invitationFilter]);
+  }, [invitations, search, status]);
 
-  if (!tutor) {
+  const handleAccept = (invitationId: string) => {
+    acceptMutation.mutate({
+      path: { id: invitationId },
+      body: { status: "accepted" },
+    });
+  };
+
+  if (user?.role !== "tutor") {
     return (
       <ErrorState
-        title="Profile not found"
-        message="We couldn't find a tutor profile linked to your account."
+        title="Access denied"
+        message="Only tutors can view invited cases."
         actionLabel="Go to dashboard"
         actionHref="/dashboard"
       />
     );
   }
 
-  let tableContent;
-  if (rows.length === 0) {
-    tableContent = (
-      <EmptyState
-        icon={Mail}
-        title="No invited cases"
-        description="No invited cases match your current filters."
-        variant="compact"
-      />
-    );
-  } else {
-    tableContent = (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Case Title</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Level</TableHead>
-            <TableHead>Budget</TableHead>
-            <TableHead>Case Status</TableHead>
-            <TableHead>Invitation</TableHead>
-            <TableHead>Invitation Date</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map(({ case: c, invitation }) => {
-            let acceptButton = null;
-            if (invitation.status === "pending") {
-              acceptButton = (
-                <Button
-                  size="sm"
-                  onClick={() => handleAccept(invitation.id)}
-                >
-                  <Check className="mr-1.5 h-3.5 w-3.5" />
-                  Accept
-                </Button>
-              );
-            }
-
-            return (
-              <TableRow key={invitation.id}>
-                <TableCell className="font-medium">{c.title}</TableCell>
-                <TableCell className="text-muted-foreground">{c.subject}</TableCell>
-                <TableCell className="text-muted-foreground">{c.level}</TableCell>
-                <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
-                <TableCell><StatusBadge status={c.status} /></TableCell>
-                <TableCell>
-                  <StatusBadge status={invitation.status} />
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(invitation.invitedAt)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {acceptButton}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => router.push(`/cases/${c.id}`)}
-                        >
-                          View Case
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -209,21 +149,20 @@ export function InvitedCasesView() {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="accepted">Accepted</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
+                <SelectItem value="superseded">Superseded</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <If condition={rows.length === 0}>
-            <Then>
-              <EmptyState
-                icon={Mail}
-                title="No invited cases"
-                description="No invited cases match your current filters."
-                variant="compact"
-              />
-            </Then>
-            <Else>
-              <Table>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon={Mail}
+              title="No invited cases"
+              description="No invited cases match your current filters."
+              variant="compact"
+            />
+          ) : (
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Case Title</TableHead>
@@ -252,15 +191,16 @@ export function InvitedCasesView() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <When condition={invitation.status === "pending"}>
+                        {invitation.status === "pending" && (
                           <Button
                             size="sm"
+                            disabled={acceptMutation.isPending}
                             onClick={() => handleAccept(invitation.id)}
                           >
                             <Check className="mr-1.5 h-3.5 w-3.5" />
                             Accept
                           </Button>
-                        </When>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -281,8 +221,7 @@ export function InvitedCasesView() {
                 ))}
               </TableBody>
             </Table>
-            </Else>
-          </If>
+          )}
         </CardContent>
       </Card>
     </div>

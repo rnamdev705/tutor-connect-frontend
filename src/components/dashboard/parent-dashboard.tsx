@@ -2,14 +2,17 @@
 
 import { If, Then, Else } from "react-if";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Briefcase,
   FileText,
   FolderOpen,
+  Loader2,
   Plus,
   Users,
 } from "lucide-react";
+import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,16 +25,30 @@ import { StatCard } from "@/components/common/stat-card";
 import { CasesTable } from "@/components/cases/cases-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
-import { getCasesByOwnerId, getParentCaseStats } from "@/lib/data";
 
 export function ParentDashboard() {
   const { user } = useAuth();
 
+  const { data, isLoading } = useQuery(getCasesOptions());
+
   if (!user) return null;
 
-  const cases = getCasesByOwnerId(user.id);
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const cases = data?.data ?? [];
   const recentCases = cases.slice(0, 5);
-  const stats = getParentCaseStats(user.id);
+  const stats = {
+    total: cases.length,
+    open: cases.filter((c) => c.status === "open").length,
+    matched: cases.filter((c) => c.status === "matched").length,
+    documents: 0,
+  };
 
   return (
     <div className="space-y-8">

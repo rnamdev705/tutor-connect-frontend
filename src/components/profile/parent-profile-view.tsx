@@ -1,16 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { If, Then, Else } from "react-if";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   Briefcase,
   FileText,
   FolderOpen,
+  Loader2,
   Mail,
   Pencil,
   Plus,
   Users,
 } from "lucide-react";
+import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,15 +28,31 @@ import { StatCard } from "@/components/common/stat-card";
 import { CasesTable } from "@/components/cases/cases-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
-import { getCasesByOwnerId, getParentCaseStats } from "@/lib/data";
 
 export function ParentProfileView() {
   const { user } = useAuth();
+  const { data, isLoading } = useQuery({
+    ...getCasesOptions(),
+    enabled: !!user,
+  });
 
   if (!user) return null;
 
-  const parentCases = getCasesByOwnerId(user.id);
-  const stats = getParentCaseStats(user.id);
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const parentCases = data?.data ?? [];
+  const stats = {
+    total: parentCases.length,
+    open: parentCases.filter((c) => c.status === "open").length,
+    matched: parentCases.filter((c) => c.status === "matched").length,
+    documents: 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -58,25 +77,11 @@ export function ParentProfileView() {
             <UserAvatar name={user.name} size="xl" />
             <div>
               <h2 className="text-lg font-semibold leading-tight">{user.name}</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">{user.email}</p>
-              <Badge variant="secondary" className="mt-1.5 capitalize">
-                {user.role} account
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <Badge variant="secondary" className="mt-2 capitalize">
+                {user.role}
               </Badge>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:ml-auto">
-            <Button asChild>
-              <Link href="/cases/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Case
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/tutors">
-                <Users className="mr-2 h-4 w-4" />
-                Browse Tutors
-              </Link>
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -88,70 +93,17 @@ export function ParentProfileView() {
         <StatCard title="Documents" value={stats.documents} icon={FileText} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Account Details</CardTitle>
-            <CardDescription>Your registered information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs font-medium text-muted-foreground">Full name</dt>
-                <dd className="mt-1 text-sm font-medium">{user.name}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-muted-foreground">Email</dt>
-                <dd className="mt-1 text-sm font-medium">{user.email}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-muted-foreground">Account type</dt>
-                <dd className="mt-1 text-sm font-medium capitalize">{user.role}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-muted-foreground">Member since</dt>
-                <dd className="mt-1 text-sm font-medium">Jan 2026</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Quick Links</CardTitle>
-            <CardDescription>Common actions for your account</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/cases">
-                <Briefcase className="mr-2 h-4 w-4" />
-                View all my cases
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/tutors">
-                <Users className="mr-2 h-4 w-4" />
-                Find a tutor
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/dashboard">
-                <Mail className="mr-2 h-4 w-4" />
-                Go to dashboard
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base">My Cases</CardTitle>
-            <CardDescription>Cases you have created</CardDescription>
+            <CardTitle className="text-base">Your Cases</CardTitle>
+            <CardDescription>Cases you have posted</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/cases">View all</Link>
+          <Button size="sm" asChild>
+            <Link href="/cases/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Case
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -160,7 +112,7 @@ export function ParentProfileView() {
               <EmptyState
                 icon={Briefcase}
                 title="No cases yet"
-                description="Create your first tutoring case to get started."
+                description="Create your first case to start finding tutors."
                 actionLabel="Create Case"
                 actionHref="/cases/new"
                 variant="compact"
@@ -170,6 +122,26 @@ export function ParentProfileView() {
               <CasesTable cases={parentCases.slice(0, 5)} showUpdated />
             </Else>
           </If>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Account</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button variant="outline" asChild>
+            <Link href="/cases">
+              <Mail className="mr-2 h-4 w-4" />
+              Manage Cases
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/tutors">
+              <Users className="mr-2 h-4 w-4" />
+              Browse Tutors
+            </Link>
+          </Button>
         </CardContent>
       </Card>
     </div>
