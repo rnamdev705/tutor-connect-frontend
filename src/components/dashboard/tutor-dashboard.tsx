@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Loader2, Mail, Pencil } from "lucide-react";
+import { FileText, Mail, Pencil } from "lucide-react";
 import { getInvitationsOptions } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { StatCard } from "@/components/common/stat-card";
 import { ErrorState } from "@/components/common/error-state";
+import { DashboardContentSkeleton } from "@/components/common/content-skeletons";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 
 export function TutorDashboard() {
@@ -31,14 +32,6 @@ export function TutorDashboard() {
         actionLabel="Go to dashboard"
         actionHref="/dashboard"
       />
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
     );
   }
 
@@ -61,6 +54,10 @@ export function TutorDashboard() {
         </p>
       </div>
 
+      {isLoading ? (
+        <DashboardContentSkeleton />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Invited Cases" value={stats.invited} icon={Mail} />
         <StatCard title="Pending Invitations" value={stats.pending} icon={Mail} />
@@ -87,6 +84,8 @@ export function TutorDashboard() {
           </Button>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

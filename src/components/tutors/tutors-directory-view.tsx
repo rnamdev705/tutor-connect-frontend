@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { If, Then, Else } from "react-if";
-import { Loader2, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { getTutorsOptions } from "@/api/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { TutorCard } from "@/components/tutors/tutor-card";
 import { PaginationControls } from "@/components/common/pagination-controls";
+import { TutorGridSkeleton } from "@/components/common/content-skeletons";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 
 export function TutorsDirectoryView() {
@@ -64,9 +65,7 @@ export function TutorsDirectoryView() {
           </div>
 
           {isLoading ? (
-            <div className="flex min-h-[200px] items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TutorGridSkeleton />
           ) : (
             <>
               <If condition={filtered.length === 0}>

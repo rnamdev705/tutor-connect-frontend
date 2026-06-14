@@ -29,6 +29,7 @@ import {
 import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { TutorProfileContentSkeleton, DocumentTableSkeleton } from "@/components/common/content-skeletons";
 import { InviteToCaseModal } from "@/components/modals/invite-to-case-modal";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -51,7 +52,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
     getTutorsByIdOptions({ path: { id: tutorId } }),
   );
 
-  const { data: documentsData } = useQuery({
+  const { data: documentsData, isLoading: documentsLoading } = useQuery({
     ...getTutorsByIdDocumentsOptions({ path: { id: tutorId } }),
     enabled: !!tutor,
   });
@@ -67,8 +68,14 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Tutor Profile</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tutor qualifications and experience
+          </p>
+        </div>
+        <TutorProfileContentSkeleton />
       </div>
     );
   }
@@ -163,6 +170,11 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
               <CardTitle className="text-base">Supporting Documents</CardTitle>
             </CardHeader>
             <CardContent>
+              <If condition={documentsLoading}>
+                <Then>
+                  <DocumentTableSkeleton rows={3} />
+                </Then>
+                <Else>
               <If condition={documents.length === 0}>
                 <Then>
                   <EmptyState
@@ -201,6 +213,8 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                       ))}
                     </TableBody>
                   </Table>
+                </Else>
+              </If>
                 </Else>
               </If>
             </CardContent>

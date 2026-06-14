@@ -8,7 +8,6 @@ import {
   Briefcase,
   FileText,
   FolderOpen,
-  Loader2,
   Plus,
   Users,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import {
 import { StatCard } from "@/components/common/stat-card";
 import { CasesTable } from "@/components/cases/cases-table";
 import { EmptyState } from "@/components/common/empty-state";
+import { DashboardContentSkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 
 export function ParentDashboard() {
@@ -32,14 +32,6 @@ export function ParentDashboard() {
   const { data, isLoading } = useQuery(getCasesOptions());
 
   if (!user) return null;
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   const cases = data?.data ?? [];
   const recentCases = cases.slice(0, 5);
@@ -69,6 +61,10 @@ export function ParentDashboard() {
         </Button>
       </div>
 
+      {isLoading ? (
+        <DashboardContentSkeleton />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Cases" value={stats.total} icon={Briefcase} />
         <StatCard title="Open Cases" value={stats.open} icon={FolderOpen} />
@@ -127,6 +123,8 @@ export function ParentDashboard() {
           </Button>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { SUBJECTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { FormContentSkeleton } from "@/components/common/content-skeletons";
 import { toast } from "sonner";
 
 export function ProfileEditView() {
@@ -134,8 +135,21 @@ export function ProfileEditView() {
 
   if (isTutor && isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/profile">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Edit Profile</h1>
+            <p className="text-sm text-muted-foreground">
+              Update your account information
+            </p>
+          </div>
+        </div>
+        <FormContentSkeleton sections={isTutor ? 3 : 1} />
       </div>
     );
   }

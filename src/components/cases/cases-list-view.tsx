@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Briefcase, Loader2, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { Briefcase, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import {
   deleteCasesByIdMutation,
   getCasesOptions,
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
+import { TableContentSkeleton } from "@/components/common/content-skeletons";
 import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
@@ -153,16 +154,10 @@ export function CasesListView() {
   const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
   const filtered = useMemo(() => cases, [cases]);
+  const hasActiveFilters =
+    !!search || subject !== "all" || level !== "all" || status !== "all";
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (cases.length === 0 && !search && subject === "all" && level === "all" && status === "all") {
+  if (!isLoading && cases.length === 0 && !hasActiveFilters) {
     return (
       <div className="space-y-6">
         <PageHeader title="My Cases" description="Manage your tutoring cases" />
@@ -260,7 +255,9 @@ export function CasesListView() {
             </Select>
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <TableContentSkeleton />
+          ) : filtered.length === 0 ? (
             <EmptyState
               icon={Briefcase}
               title="No matching cases"

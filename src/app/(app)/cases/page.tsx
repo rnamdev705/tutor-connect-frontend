@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CasesListView } from "@/components/cases/cases-list-view";
+import { PageHeader } from "@/components/common/page-header";
+import { TableContentSkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 
 export default function CasesPage() {
@@ -17,8 +19,9 @@ export default function CasesPage() {
 
   if (isLoading || user?.role === "tutor") {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
+      <div className="space-y-6">
+        <PageHeader title="My Cases" description="Manage your tutoring cases" />
+        <TableContentSkeleton rows={5} />
       </div>
     );
   }

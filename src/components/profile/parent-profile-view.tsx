@@ -7,7 +7,6 @@ import {
   Briefcase,
   FileText,
   FolderOpen,
-  Loader2,
   Mail,
   Pencil,
   Plus,
@@ -27,6 +26,7 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { StatCard } from "@/components/common/stat-card";
 import { CasesTable } from "@/components/cases/cases-table";
 import { EmptyState } from "@/components/common/empty-state";
+import { ProfileActivitySkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 
 export function ParentProfileView() {
@@ -37,14 +37,6 @@ export function ParentProfileView() {
   });
 
   if (!user) return null;
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   const parentCases = data?.data ?? [];
   const stats = {
@@ -86,6 +78,10 @@ export function ParentProfileView() {
         </CardContent>
       </Card>
 
+      {isLoading ? (
+        <ProfileActivitySkeleton />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Cases" value={stats.total} icon={Briefcase} />
         <StatCard title="Open Cases" value={stats.open} icon={FolderOpen} />
@@ -144,6 +140,8 @@ export function ParentProfileView() {
           </Button>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

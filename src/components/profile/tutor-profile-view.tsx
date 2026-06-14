@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { If, Then, Else } from "react-if";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Loader2, Pencil, Trash2, Upload } from "lucide-react";
+import { Download, FileText, Pencil, Trash2, Upload } from "lucide-react";
 import {
   deleteDocumentsByIdMutation,
   getTutorsByIdDocumentsOptions,
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
+import { DocumentTableSkeleton } from "@/components/common/content-skeletons";
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { PendingTutorDocumentRow, DeletingStatusCell } from "@/components/documents/pending-document-rows";
@@ -173,9 +174,7 @@ export function TutorProfileView() {
         </CardHeader>
         <CardContent>
           {docsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <DocumentTableSkeleton rows={3} />
           ) : (
             <If condition={!showDocumentsTable}>
               <Then>

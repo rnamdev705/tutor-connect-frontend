@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/card";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { EmptyState } from "@/components/common/empty-state";
+import { FormContentSkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
@@ -185,8 +186,19 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
 
   if (mode === "edit" && isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={caseId ? `/cases/${caseId}` : "/cases"}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Edit Case</h1>
+            <p className="text-sm text-muted-foreground">Update your case details.</p>
+          </div>
+        </div>
+        <FormContentSkeleton sections={3} />
       </div>
     );
   }

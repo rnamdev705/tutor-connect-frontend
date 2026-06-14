@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else, When } from "react-if";
 import {
   FileText,
-  Loader2,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -27,13 +26,13 @@ import {
   postCasesByIdInvitationsMutation,
 } from "@/api/@tanstack/react-query.gen";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
+import { Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -51,6 +50,7 @@ import {
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { CaseDetailContentSkeleton, DocumentTableSkeleton } from "@/components/common/content-skeletons";
 import { ActionBusyOverlay } from "@/components/common/action-busy-overlay";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
@@ -93,7 +93,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     getCasesByIdOptions({ path: { id: caseId } }),
   );
 
-  const { data: documentsData } = useQuery({
+  const { data: documentsData, isLoading: documentsLoading } = useQuery({
     ...getCasesByCaseIdDocumentsOptions({ path: { caseId } }),
     enabled: !!caseData,
   });
@@ -218,8 +218,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Case Details</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            View case information and documents
+          </p>
+        </div>
+        <CaseDetailContentSkeleton />
       </div>
     );
   }
@@ -285,7 +291,10 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
     ...documents.map((doc) => ({ kind: "document" as const, row: doc })),
   ];
   const documentCount = allDocumentRows.length;
-  const showDocumentsTable = documentCount > 0;
+  const showDocumentsSkeleton =
+    documentsLoading && pendingUploads.length === 0;
+  const showDocumentsEmpty =
+    !documentsLoading && documentCount === 0;
   const previewDocumentRows = allDocumentRows.slice(0, PREVIEW_LIMIT);
   const caseIsDeleting = isDeletingCase(caseId);
   const pageBusy = caseIsDeleting;
@@ -501,7 +510,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <div className="min-w-0">
             <CardTitle className="text-base">Documents</CardTitle>
-            <CardDescription>{documentCount} file(s)</CardDescription>
+            {showDocumentsSkeleton ? (
+              <Skeleton className="h-4 w-20" />
+            ) : (
+              <CardDescription>{documentCount} file(s)</CardDescription>
+            )}
           </div>
           <Button
             size="sm"
@@ -514,7 +527,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          <If condition={!showDocumentsTable}>
+          <If condition={showDocumentsSkeleton}>
+            <Then>
+              <DocumentTableSkeleton rows={3} />
+            </Then>
+            <Else>
+          <If condition={showDocumentsEmpty}>
             <Then>
               <EmptyState
                 icon={FileText}
@@ -599,6 +617,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               </div>
             </Else>
           </If>
+            </Else>
+          </If>
+          {!showDocumentsSkeleton && (
           <Button
             variant="outline"
             size="sm"
@@ -609,6 +630,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               View all{documentCount > 0 ? ` (${documentCount})` : ""}
             </Link>
           </Button>
+          )}
         </CardContent>
       </Card>
       </div>

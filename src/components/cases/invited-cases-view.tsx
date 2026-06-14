@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Mail, MoreHorizontal } from "lucide-react";
+import { Check, Mail, MoreHorizontal } from "lucide-react";
 import {
   getInvitationsOptions,
   getInvitationsQueryKey,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
+import { TableContentSkeleton } from "@/components/common/content-skeletons";
 import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
@@ -108,8 +109,16 @@ export function InvitedCasesView() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <PageHeader
+          title="Invited Cases"
+          description="Cases you've been invited to tutor"
+        />
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
+            <TableContentSkeleton />
+          </CardContent>
+        </Card>
       </div>
     );
   }

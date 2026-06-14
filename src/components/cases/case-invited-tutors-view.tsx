@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else } from "react-if";
-import { ArrowLeft, Loader2, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
 import {
   deleteCasesByIdInvitationsByTutorIdMutation,
   getCasesByIdOptions,
@@ -38,6 +38,7 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { InvitedTutorListSkeleton } from "@/components/common/content-skeletons";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
@@ -193,8 +194,25 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/cases/${caseId}`}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Invited Tutors</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage tutors invited to this case
+            </p>
+          </div>
+        </div>
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
+            <InvitedTutorListSkeleton />
+          </CardContent>
+        </Card>
       </div>
     );
   }

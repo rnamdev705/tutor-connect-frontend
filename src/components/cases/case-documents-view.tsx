@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else } from "react-if";
-import { ArrowLeft, FileText, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, FileText, Upload } from "lucide-react";
 import {
   deleteDocumentsByIdMutation,
   getCasesByCaseIdDocumentsOptions,
@@ -37,6 +37,7 @@ import {
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { DocumentTableSkeleton } from "@/components/common/content-skeletons";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
@@ -195,8 +196,25 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
 
   if (caseLoading || docsLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/cases/${caseId}`}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Case documents and uploads
+            </p>
+          </div>
+        </div>
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
+            <DocumentTableSkeleton />
+          </CardContent>
+        </Card>
       </div>
     );
   }
