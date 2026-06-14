@@ -59,6 +59,7 @@ import { PendingCaseDocumentRow, DeletingStatusCell, InvitingStatusCell, Removin
 import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
@@ -193,7 +194,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
 
   const deleteDocumentMutation = useMutation({
     ...deleteDocumentsByIdMutation(),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      evictDocumentBlobCache(variables.path.id);
       queryClient.invalidateQueries({
         queryKey: getCasesByCaseIdDocumentsOptions({ path: { caseId } }).queryKey,
       });

@@ -48,6 +48,7 @@ import { DocumentRowActions } from "@/components/documents/document-row-actions"
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate, formatFileSize } from "@/lib/format";
+import { evictDocumentBlobCache } from "@/lib/document-file";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
@@ -126,7 +127,8 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
 
   const deleteDocumentMutation = useMutation({
     ...deleteDocumentsByIdMutation(),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      evictDocumentBlobCache(variables.path.id);
       queryClient.invalidateQueries({
         queryKey: getCasesByCaseIdDocumentsOptions({ path: { caseId } }).queryKey,
       });

@@ -140,7 +140,7 @@ export const getCasesQueryKey = (options?: Options<GetCasesData>) => createQuery
 /**
  * List cases
  *
- * Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search` (matches title, subject, or location), `subject`, `level`, `status` (open/matched/closed). Response includes `meta` with total and totalPages.
+ * Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search`, `subject`, `level`, `status`, `skipCount`, and optional `tutorProfileId` (includes `tutorInvitation` for that tutor only). Response includes `meta` with total and totalPages.
  */
 export const getCasesOptions = (options?: Options<GetCasesData>) => queryOptions<GetCasesResponse, GetCasesError, GetCasesResponse, ReturnType<typeof getCasesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -189,7 +189,7 @@ export const getCasesInfiniteQueryKey = (options?: Options<GetCasesData>): Query
 /**
  * List cases
  *
- * Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search` (matches title, subject, or location), `subject`, `level`, `status` (open/matched/closed). Response includes `meta` with total and totalPages.
+ * Returns a paginated list of tuition cases. Parents see only cases they created. Tutors see only cases they have been invited to. Query params: `page`, `limit`, `search`, `subject`, `level`, `status`, `skipCount`, and optional `tutorProfileId` (includes `tutorInvitation` for that tutor only). Response includes `meta` with total and totalPages.
  */
 export const getCasesInfiniteOptions = (options?: Options<GetCasesData>) => infiniteQueryOptions<GetCasesResponse, GetCasesError, InfiniteData<GetCasesResponse>, QueryKey<Options<GetCasesData>>, number | Pick<QueryKey<Options<GetCasesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
 // @ts-ignore

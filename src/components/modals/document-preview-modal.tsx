@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   canPreviewDocument,
-  downloadDocument,
   fetchDocumentBlob,
+  getCachedDocumentBlob,
   saveDocumentBlob,
 } from "@/lib/document-file";
 import { toast } from "sonner";
@@ -55,16 +55,25 @@ export function DocumentPreviewModal({
     let cancelled = false;
 
     const loadPreview = async () => {
-      setIsLoading(true);
       setError(null);
       setPreviewUrl(null);
 
+      const cached = getCachedDocumentBlob(document.id);
+      if (cached) {
+        const objectUrl = URL.createObjectURL(cached);
+        previewUrlRef.current = objectUrl;
+        setPreviewUrl(objectUrl);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
       try {
-        const blob = await fetchDocumentBlob(document.id);
+        const blob = await fetchDocumentBlob(document.id, document.mimeType);
         if (cancelled) return;
 
-        const typedBlob = new Blob([blob], { type: document.mimeType });
-        const objectUrl = URL.createObjectURL(typedBlob);
+        const objectUrl = URL.createObjectURL(blob);
         previewUrlRef.current = objectUrl;
         setPreviewUrl(objectUrl);
       } catch (loadError) {
@@ -94,13 +103,10 @@ export function DocumentPreviewModal({
 
     try {
       setIsDownloading(true);
-      if (previewUrl) {
-        const response = await fetch(previewUrl);
-        const blob = await response.blob();
-        saveDocumentBlob(blob, document.originalName);
-      } else {
-        await downloadDocument(document.id, document.originalName);
-      }
+      const blob =
+        getCachedDocumentBlob(document.id) ??
+        (await fetchDocumentBlob(document.id, document.mimeType));
+      saveDocumentBlob(blob, document.originalName);
       toast.success("Download started");
     } catch (downloadError) {
       toast.error(getApiErrorMessage(downloadError));

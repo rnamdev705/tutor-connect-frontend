@@ -36,6 +36,7 @@ import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -65,7 +66,8 @@ export function TutorProfileView() {
   });
   const deleteMutation = useMutation({
     ...deleteDocumentsByIdMutation(),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      evictDocumentBlobCache(variables.path.id);
       queryClient.invalidateQueries({
         queryKey: getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }).queryKey,
       });
