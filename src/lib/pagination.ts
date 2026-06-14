@@ -1,5 +1,17 @@
 export const PREVIEW_LIMIT = 3;
 export const DEFAULT_PAGE_SIZE = 10;
+export const MAX_FETCH_LIMIT = 100;
+
+export function matchesText(value: string | null | undefined, query: string) {
+  if (!query.trim()) return true;
+  return (value ?? "").toLowerCase().includes(query.trim().toLowerCase());
+}
+
+export function matchesTextInList(items: string[], query: string) {
+  if (!query.trim()) return true;
+  const normalized = query.trim().toLowerCase();
+  return items.some((item) => item.toLowerCase().includes(normalized));
+}
 
 export function paginateItems<T>(items: T[], page: number, pageSize: number) {
   const total = items.length;

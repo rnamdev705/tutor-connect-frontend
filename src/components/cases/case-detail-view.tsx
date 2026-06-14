@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else, When } from "react-if";
 import {
+  Eye,
   FileText,
   MoreHorizontal,
   Pencil,
@@ -462,6 +463,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                                   router.push(`/tutors/${inv.tutorProfileId}`)
                                 }
                               >
+                                <Eye className="mr-2 h-4 w-4" />
                                 View Profile
                               </DropdownMenuItem>
                             )}

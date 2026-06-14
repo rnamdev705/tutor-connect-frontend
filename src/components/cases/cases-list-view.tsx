@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Briefcase, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { Briefcase, Eye, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   deleteCasesByIdMutation,
   getCasesOptions,
@@ -45,7 +45,12 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_FETCH_LIMIT,
+  matchesText,
+  paginateItems,
+} from "@/lib/pagination";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import type { Case } from "@/api/types.gen";
 import { toast } from "sonner";
@@ -84,9 +89,11 @@ function CaseTableRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}`)}>
+              <Eye className="mr-2 h-4 w-4" />
               View
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
+              <Pencil className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -137,9 +144,8 @@ export function CasesListView() {
   const { data, isLoading } = useQuery(
     getCasesOptions({
       query: {
-        page,
-        limit: DEFAULT_PAGE_SIZE,
-        search: search || undefined,
+        page: 1,
+        limit: MAX_FETCH_LIMIT,
         subject: subject !== "all" ? subject : undefined,
         level: level !== "all" ? level : undefined,
         status:
@@ -151,9 +157,17 @@ export function CasesListView() {
   );
 
   const cases = data?.data ?? [];
-  const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
-  const filtered = useMemo(() => cases, [cases]);
+  const filtered = useMemo(
+    () => cases.filter((caseItem) => matchesText(caseItem.title, search)),
+    [cases, search],
+  );
+
+  const pagination = useMemo(
+    () => paginateItems(filtered, page, DEFAULT_PAGE_SIZE),
+    [filtered, page],
+  );
+
   const hasActiveFilters =
     !!search || subject !== "all" || level !== "all" || status !== "all";
 
@@ -174,7 +188,7 @@ export function CasesListView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Cases" count={paginationMeta.total}>
+      <PageHeader title="My Cases" count={filtered.length}>
         {user?.role === "parent" && (
           <Button asChild>
             <Link href="/cases/new">
@@ -257,7 +271,7 @@ export function CasesListView() {
 
           {isLoading ? (
             <TableContentSkeleton />
-          ) : filtered.length === 0 ? (
+          ) : pagination.items.length === 0 ? (
             <EmptyState
               icon={Briefcase}
               title="No matching cases"
@@ -279,7 +293,7 @@ export function CasesListView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c) => (
+                {pagination.items.map((c) => (
                   <CaseTableRow
                     key={c.id}
                     caseItem={c}
@@ -296,10 +310,10 @@ export function CasesListView() {
             </Table>
           )}
           <PaginationControls
-            page={paginationMeta.page}
-            totalPages={paginationMeta.totalPages}
-            total={paginationMeta.total}
-            pageSize={paginationMeta.limit}
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            pageSize={DEFAULT_PAGE_SIZE}
             onPageChange={setPage}
           />
         </CardContent>

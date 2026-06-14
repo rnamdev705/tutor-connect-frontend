@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else } from "react-if";
-import { ArrowLeft, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Eye, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
 import {
   deleteCasesByIdInvitationsByTutorIdMutation,
   getCasesByIdOptions,
@@ -361,6 +361,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                                   router.push(`/tutors/${row.tutorProfileId}`)
                                 }
                               >
+                                <Eye className="mr-2 h-4 w-4" />
                                 View Profile
                               </DropdownMenuItem>
                             )}

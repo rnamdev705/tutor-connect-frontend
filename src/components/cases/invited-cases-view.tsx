@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Mail, MoreHorizontal } from "lucide-react";
+import { Check, Eye, Mail, MoreHorizontal } from "lucide-react";
 import {
   getInvitationsOptions,
   getInvitationsQueryKey,
@@ -240,6 +240,7 @@ export function InvitedCasesView() {
                             <DropdownMenuItem
                               onClick={() => router.push(`/cases/${c.id}`)}
                             >
+                              <Eye className="mr-2 h-4 w-4" />
                               View Case
                             </DropdownMenuItem>
                           </DropdownMenuContent>

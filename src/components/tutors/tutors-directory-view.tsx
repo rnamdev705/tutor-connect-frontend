@@ -12,7 +12,13 @@ import { EmptyState } from "@/components/common/empty-state";
 import { TutorCard } from "@/components/tutors/tutor-card";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { TutorGridSkeleton } from "@/components/common/content-skeletons";
-import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_FETCH_LIMIT,
+  matchesText,
+  matchesTextInList,
+  paginateItems,
+} from "@/lib/pagination";
 
 export function TutorsDirectoryView() {
   const [nameSearch, setNameSearch] = useState("");
@@ -22,25 +28,35 @@ export function TutorsDirectoryView() {
   const { data, isLoading } = useQuery(
     getTutorsOptions({
       query: {
-        page,
-        limit: DEFAULT_PAGE_SIZE,
-        name: nameSearch || undefined,
-        qualification: qualSearch || undefined,
+        page: 1,
+        limit: MAX_FETCH_LIMIT,
       },
     }),
   );
 
   const tutors = data?.data ?? [];
-  const paginationMeta = resolvePaginationMeta(data?.meta, page);
 
-  const filtered = useMemo(() => tutors, [tutors]);
+  const filtered = useMemo(
+    () =>
+      tutors.filter(
+        (tutor) =>
+          matchesText(tutor.displayName, nameSearch) &&
+          matchesTextInList(tutor.qualifications, qualSearch),
+      ),
+    [tutors, nameSearch, qualSearch],
+  );
+
+  const pagination = useMemo(
+    () => paginateItems(filtered, page, DEFAULT_PAGE_SIZE),
+    [filtered, page],
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Tutor Directory"
         description="Browse qualified tutors for your cases"
-        count={paginationMeta.total}
+        count={filtered.length}
       />
 
       <Card className="shadow-sm">
@@ -68,7 +84,7 @@ export function TutorsDirectoryView() {
             <TutorGridSkeleton />
           ) : (
             <>
-              <If condition={filtered.length === 0}>
+              <If condition={pagination.items.length === 0}>
                 <Then>
                   <EmptyState
                     icon={Users}
@@ -79,17 +95,17 @@ export function TutorsDirectoryView() {
                 </Then>
                 <Else>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtered.map((tutor) => (
+                    {pagination.items.map((tutor) => (
                       <TutorCard key={tutor.id} tutor={tutor} />
                     ))}
                   </div>
                 </Else>
               </If>
               <PaginationControls
-                page={paginationMeta.page}
-                totalPages={paginationMeta.totalPages}
-                total={paginationMeta.total}
-                pageSize={paginationMeta.limit}
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                pageSize={DEFAULT_PAGE_SIZE}
                 onPageChange={setPage}
               />
             </>

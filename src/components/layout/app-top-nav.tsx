@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bell, LogOut, Search, User } from "lucide-react";
+import { LogOut, Search, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/user-avatar";
 import {
@@ -35,11 +34,6 @@ export function AppTopNav() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-blue-600" />
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger
             type="button"
