@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { If, Then, Else } from "react-if";
 import { Briefcase, Loader2 } from "lucide-react";
-import { getCasesOptions } from "@/api/@tanstack/react-query.gen";
-import { useQuery } from "@tanstack/react-query";
+import {
+  getCasesByIdOptions,
+  getCasesOptions,
+} from "@/api/@tanstack/react-query.gen";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +20,17 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
+import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
 import { formatCurrency } from "@/lib/format";
-import type { Case } from "@/api/types.gen";
+import type { Case, CaseDetail } from "@/api/types.gen";
+import type { AppStatus } from "@/components/common/status-badge";
 
 interface InviteToCaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tutorProfileId: string;
   tutorName: string;
-  excludeCaseIds?: string[];
+  invitingCaseIds?: string[];
   onInvite?: (caseItem: Case) => void;
 }
 
@@ -34,7 +39,7 @@ export function InviteToCaseModal({
   onOpenChange,
   tutorProfileId,
   tutorName,
-  excludeCaseIds = [],
+  invitingCaseIds = [],
   onInvite,
 }: InviteToCaseModalProps) {
   const [search, setSearch] = useState("");
@@ -51,19 +56,51 @@ export function InviteToCaseModal({
     enabled: open,
   });
 
-  const available = (data?.data ?? []).filter(
-    (c) =>
-      !c.invitedTutorIds.includes(tutorProfileId) &&
-      !excludeCaseIds.includes(c.id),
+  const cases = data?.data ?? [];
+
+  const invitedCaseIds = useMemo(
+    () =>
+      cases
+        .filter((caseItem) => caseItem.invitedTutorIds.includes(tutorProfileId))
+        .map((caseItem) => caseItem.id),
+    [cases, tutorProfileId],
   );
 
+  const invitationDetailQueries = useQueries({
+    queries: invitedCaseIds.map((caseId) => ({
+      ...getCasesByIdOptions({ path: { id: caseId } }),
+      enabled: open,
+      select: (caseDetail: CaseDetail) => {
+        const invitation = caseDetail.invitations.find(
+          (inv) => inv.tutorProfileId === tutorProfileId,
+        );
+        return invitation?.status ?? ("pending" as AppStatus);
+      },
+    })),
+  });
+
+  const invitationStatusByCaseId = useMemo(() => {
+    const map = new Map<string, AppStatus>();
+    invitedCaseIds.forEach((caseId, index) => {
+      const status = invitationDetailQueries[index]?.data;
+      if (status) {
+        map.set(caseId, status);
+      }
+    });
+    return map;
+  }, [invitedCaseIds, invitationDetailQueries]);
+
   const handleConfirm = () => {
-    if (selected) {
-      onInvite?.(selected);
-      setSelected(null);
-      setSearch("");
-      onOpenChange(false);
-    }
+    if (!selected) return;
+
+    const isInvited = selected.invitedTutorIds.includes(tutorProfileId);
+    const isInviting = invitingCaseIds.includes(selected.id);
+    if (isInvited || isInviting) return;
+
+    onInvite?.(selected);
+    setSelected(null);
+    setSearch("");
+    onOpenChange(false);
   };
 
   return (
@@ -97,45 +134,63 @@ export function InviteToCaseModal({
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <If condition={available.length === 0}>
+            <If condition={cases.length === 0}>
               <Then>
                 <EmptyState
                   icon={Briefcase}
-                  title="No cases available"
-                  description={
-                    (data?.data ?? []).length === 0
-                      ? "Create an open case first, then invite this tutor."
-                      : "This tutor is already invited to all of your open cases."
-                  }
+                  title="No cases found"
+                  description="Create an open case first, then invite this tutor."
                   variant="compact"
                 />
               </Then>
               <Else>
-                {available.map((caseItem) => (
-                  <button
-                    key={caseItem.id}
-                    type="button"
-                    onClick={() => setSelected(caseItem)}
-                    className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-                      selected?.id === caseItem.id
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{caseItem.title}</p>
-                        <StatusBadge status={caseItem.status} />
+                {cases.map((caseItem) => {
+                  const invitationStatus = invitationStatusByCaseId.get(caseItem.id);
+                  const isInvited =
+                    caseItem.invitedTutorIds.includes(tutorProfileId) ||
+                    !!invitationStatus;
+                  const isInviting = invitingCaseIds.includes(caseItem.id);
+                  const isDisabled = isInvited || isInviting;
+                  const isSelected = selected?.id === caseItem.id && !isDisabled;
+
+                  return (
+                    <button
+                      key={caseItem.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (!isDisabled) setSelected(caseItem);
+                      }}
+                      className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                        isDisabled
+                          ? "cursor-not-allowed border-muted bg-muted/30 opacity-70"
+                          : isSelected
+                            ? "border-primary bg-primary/5"
+                            : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{caseItem.title}</p>
+                          <StatusBadge status={caseItem.status} />
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {caseItem.subject} · {caseItem.level} · {caseItem.location}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatCurrency(caseItem.budgetPerHour)}/hour
+                        </p>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {caseItem.subject} · {caseItem.level} · {caseItem.location}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatCurrency(caseItem.budgetPerHour)}/hour
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                      {isInviting ? (
+                        <InvitingStatusCell />
+                      ) : invitationStatus ? (
+                        <StatusBadge status={invitationStatus} />
+                      ) : isInvited ? (
+                        <StatusBadge status="pending" />
+                      ) : null}
+                    </button>
+                  );
+                })}
               </Else>
             </If>
           )}
@@ -145,7 +200,14 @@ export function InviteToCaseModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selected}>
+          <Button
+            onClick={handleConfirm}
+            disabled={
+              !selected ||
+              selected.invitedTutorIds.includes(tutorProfileId) ||
+              invitingCaseIds.includes(selected.id)
+            }
+          >
             Send Invitation
           </Button>
         </DialogFooter>

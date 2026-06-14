@@ -247,7 +247,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
           }}
           tutorProfileId={tutorId}
           tutorName={tutor.displayName}
-          excludeCaseIds={pendingInvites.map((invite) => invite.caseId)}
+          invitingCaseIds={pendingInvites.map((invite) => invite.caseId)}
           onInvite={(caseItem) =>
             trackInvite(caseItem.id, caseItem.title, () =>
               inviteMutation.mutateAsync({

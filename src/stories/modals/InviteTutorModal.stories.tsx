@@ -18,7 +18,8 @@ const meta = {
     open: true,
     onOpenChange: fn(),
     onInvite: fn(),
-    excludeIds: [],
+    invitedTutors: [],
+    invitingTutorIds: [],
   },
 } satisfies Meta<typeof InviteTutorModal>;
 
@@ -27,8 +28,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const WithExcludedTutors: Story = {
+export const WithInvitedTutors: Story = {
   args: {
-    excludeIds: ["tutor-1", "tutor-2"],
+    invitedTutors: [
+      { tutorProfileId: "tutor-1", status: "pending" },
+      { tutorProfileId: "tutor-2", status: "accepted" },
+    ],
   },
 };

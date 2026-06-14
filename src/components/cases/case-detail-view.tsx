@@ -597,10 +597,13 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             if (open && (inviteInProgress || hasPendingRevokes || caseIsDeleting)) return;
             setInviteOpen(open);
           }}
-          excludeIds={[
-            ...caseData.invitedTutorIds,
-            ...pendingInvites.map((invite) => invite.tutorProfileId),
-          ]}
+          invitedTutors={caseData.invitations
+            .filter((inv) => inv.tutorProfileId)
+            .map((inv) => ({
+              tutorProfileId: inv.tutorProfileId!,
+              status: inv.status,
+            }))}
+          invitingTutorIds={pendingInvites.map((invite) => invite.tutorProfileId)}
           onInvite={(tutor) =>
             trackInvite(tutor.id, tutor.displayName, () =>
               inviteMutation.mutateAsync({

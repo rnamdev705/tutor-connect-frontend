@@ -17,23 +17,33 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { StatusBadge } from "@/components/common/status-badge";
+import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
 import {
   getExperienceSummary,
   getQualificationSummary,
 } from "@/lib/format";
 import type { TutorProfileSummary } from "@/api/types.gen";
+import type { AppStatus } from "@/components/common/status-badge";
+
+export interface InvitedTutorInfo {
+  tutorProfileId: string;
+  status: AppStatus;
+}
 
 interface InviteTutorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  excludeIds?: string[];
+  invitedTutors?: InvitedTutorInfo[];
+  invitingTutorIds?: string[];
   onInvite?: (tutor: TutorProfileSummary) => void;
 }
 
 export function InviteTutorModal({
   open,
   onOpenChange,
-  excludeIds = [],
+  invitedTutors = [],
+  invitingTutorIds = [],
   onInvite,
 }: InviteTutorModalProps) {
   const [search, setSearch] = useState("");
@@ -44,19 +54,35 @@ export function InviteTutorModal({
     enabled: open,
   });
 
-  const available = (data?.data ?? []).filter((t) => !excludeIds.includes(t.id));
+  const tutors = data?.data ?? [];
+
+  const invitedByTutorId = new Map(
+    invitedTutors.map((entry) => [entry.tutorProfileId, entry.status]),
+  );
 
   const handleConfirm = () => {
-    if (selected) {
-      onInvite?.(selected);
-      setSelected(null);
-      setSearch("");
-      onOpenChange(false);
+    if (!selected) return;
+    if (invitedByTutorId.has(selected.id) || invitingTutorIds.includes(selected.id)) {
+      return;
     }
+
+    onInvite?.(selected);
+    setSelected(null);
+    setSearch("");
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) {
+          setSelected(null);
+          setSearch("");
+        }
+        onOpenChange(value);
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Invite Tutor</DialogTitle>
@@ -77,7 +103,7 @@ export function InviteTutorModal({
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <If condition={available.length === 0}>
+            <If condition={tutors.length === 0}>
               <Then>
                 <EmptyState
                   icon={Users}
@@ -87,29 +113,46 @@ export function InviteTutorModal({
                 />
               </Then>
               <Else>
-                {available.map((tutor) => (
-                  <button
-                    key={tutor.id}
-                    type="button"
-                    onClick={() => setSelected(tutor)}
-                    className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
-                      selected?.id === tutor.id
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <UserAvatar name={tutor.displayName} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{tutor.displayName}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {getQualificationSummary(tutor)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {getExperienceSummary(tutor)}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                {tutors.map((tutor) => {
+                  const invitationStatus = invitedByTutorId.get(tutor.id);
+                  const isInviting = invitingTutorIds.includes(tutor.id);
+                  const isDisabled = !!invitationStatus || isInviting;
+                  const isSelected = selected?.id === tutor.id && !isDisabled;
+
+                  return (
+                    <button
+                      key={tutor.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (!isDisabled) setSelected(tutor);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
+                        isDisabled
+                          ? "cursor-not-allowed border-muted bg-muted/30 opacity-70"
+                          : isSelected
+                            ? "border-primary bg-primary/5"
+                            : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <UserAvatar name={tutor.displayName} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{tutor.displayName}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {getQualificationSummary(tutor)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {getExperienceSummary(tutor)}
+                        </p>
+                      </div>
+                      {isInviting ? (
+                        <InvitingStatusCell />
+                      ) : invitationStatus ? (
+                        <StatusBadge status={invitationStatus} />
+                      ) : null}
+                    </button>
+                  );
+                })}
               </Else>
             </If>
           )}
@@ -119,7 +162,14 @@ export function InviteTutorModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selected}>
+          <Button
+            onClick={handleConfirm}
+            disabled={
+              !selected ||
+              invitedByTutorId.has(selected.id) ||
+              invitingTutorIds.includes(selected.id)
+            }
+          >
             Confirm Invitation
           </Button>
         </DialogFooter>
