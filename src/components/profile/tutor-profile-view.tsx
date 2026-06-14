@@ -29,8 +29,10 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
+import { PendingTutorDocumentRow } from "@/components/documents/pending-document-rows";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { toast } from "sonner";
@@ -41,13 +43,23 @@ export function TutorProfileView() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const { pendingUploads, trackUpload } = usePendingDocumentUploads();
 
   const { data: documentsData, isLoading: docsLoading } = useQuery({
     ...getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }),
     enabled: !!tutor?.id,
   });
 
-  const uploadMutation = useMutation(postTutorsMeProfileDocumentsMutation());
+  const uploadMutation = useMutation({
+    ...postTutorsMeProfileDocumentsMutation(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }).queryKey,
+      });
+      toast.success("Document uploaded");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
   const deleteMutation = useMutation(deleteDocumentsByIdMutation());
 
   if (!tutor) {
@@ -62,20 +74,11 @@ export function TutorProfileView() {
   }
 
   const documents = documentsData?.data ?? [];
+  const documentCount = documents.length + pendingUploads.length;
+  const showDocumentsTable = documentCount > 0;
 
   const handleUpload = (file: File) => {
-    uploadMutation.mutate(
-      { body: { file } },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: getTutorsByIdDocumentsOptions({ path: { id: tutor.id } }).queryKey,
-          });
-          toast.success("Document uploaded");
-        },
-        onError: (error) => toast.error(getApiErrorMessage(error)),
-      },
-    );
+    trackUpload(file, () => uploadMutation.mutateAsync({ body: { file } }));
   };
 
   const handleDelete = () => {
@@ -168,7 +171,7 @@ export function TutorProfileView() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <If condition={documents.length === 0}>
+            <If condition={!showDocumentsTable}>
               <Then>
                 <EmptyState
                   icon={FileText}
@@ -190,6 +193,9 @@ export function TutorProfileView() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {pendingUploads.map((upload) => (
+                      <PendingTutorDocumentRow key={upload.id} upload={upload} />
+                    ))}
                     {documents.map((d) => (
                       <TableRow key={d.id}>
                         <TableCell className="font-medium">{d.originalName}</TableCell>

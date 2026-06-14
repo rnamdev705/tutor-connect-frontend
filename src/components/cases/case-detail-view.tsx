@@ -54,9 +54,11 @@ import { ErrorState } from "@/components/common/error-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
+import { PendingCaseDocumentRow } from "@/components/documents/pending-document-rows";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate, formatFileSize } from "@/lib/format";
+import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { toast } from "sonner";
 
 interface CaseDetailViewProps {
@@ -70,6 +72,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [tutorSearch, setTutorSearch] = useState("");
+  const { pendingUploads, trackUpload } = usePendingDocumentUploads(caseId);
 
   const { data: caseData, isLoading, isError } = useQuery(
     getCasesByIdOptions({ path: { id: caseId } }),
@@ -155,6 +158,8 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   });
 
   const documents = documentsData?.data ?? [];
+  const documentCount = documents.length + pendingUploads.length;
+  const showDocumentsTable = documentCount > 0;
 
   return (
     <div className="space-y-6">
@@ -303,7 +308,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base">Documents</CardTitle>
-            <CardDescription>{documents.length} file(s)</CardDescription>
+            <CardDescription>{documentCount} file(s)</CardDescription>
           </div>
           <Button size="sm" onClick={() => setUploadOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
@@ -311,7 +316,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          <If condition={documents.length === 0}>
+          <If condition={!showDocumentsTable}>
             <Then>
               <EmptyState
                 icon={FileText}
@@ -335,6 +340,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {pendingUploads.map((upload) => (
+                    <PendingCaseDocumentRow key={upload.id} upload={upload} />
+                  ))}
                   {documents.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">{d.originalName}</TableCell>
@@ -381,10 +389,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onUpload={(file) =>
-          uploadMutation.mutate({
-            path: { caseId },
-            body: { file },
-          })
+          trackUpload(file, () =>
+            uploadMutation.mutateAsync({
+              path: { caseId },
+              body: { file },
+            }),
+          )
         }
       />
     </div>

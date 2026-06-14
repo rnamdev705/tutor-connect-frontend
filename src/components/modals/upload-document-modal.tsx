@@ -11,19 +11,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_MB } from "@/lib/constants";
 
 interface UploadDocumentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called with the validated file after the simulated upload completes. */
+  /** Starts upload in the background — modal closes immediately. */
   onUpload?: (file: File) => void;
 }
 
 /**
  * Modal for uploading case or profile documents.
- * Validates file type and size against {@link ALLOWED_FILE_TYPES} and {@link MAX_FILE_SIZE_MB}.
+ * Validates file type and size, then closes immediately while upload continues in the parent view.
  */
 export function UploadDocumentModal({
   open,
@@ -32,14 +31,10 @@ export function UploadDocumentModal({
 }: UploadDocumentModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setFile(null);
-    setUploading(false);
-    setProgress(0);
     setError(null);
   }, []);
 
@@ -71,23 +66,9 @@ export function UploadDocumentModal({
     if (dropped) handleFile(dropped);
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return p + 10;
-      });
-    }, 100);
-
-    await new Promise((r) => setTimeout(r, 1100));
-    onUpload?.(file);
+  const handleUpload = () => {
+    if (!file || !onUpload) return;
+    onUpload(file);
     reset();
     onOpenChange(false);
   };
@@ -166,20 +147,11 @@ export function UploadDocumentModal({
           <p className="text-sm text-destructive">{error}</p>
         )}
 
-        {uploading && (
-          <div className="space-y-2">
-            <Progress value={progress} />
-            <p className="text-xs text-muted-foreground text-center">
-              Uploading... {progress}%
-            </p>
-          </div>
-        )}
-
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} disabled={!file || uploading}>
+          <Button onClick={handleUpload} disabled={!file}>
             Upload
           </Button>
         </DialogFooter>

@@ -35,6 +35,7 @@ import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { EmptyState } from "@/components/common/empty-state";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
 import type { CaseStatus } from "@/lib/types";
 import { toast } from "sonner";
@@ -94,7 +95,17 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
-  const uploadMutation = useMutation(postCasesByCaseIdDocumentsMutation());
+  const uploadMutation = useMutation({
+    ...postCasesByCaseIdDocumentsMutation(),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: getCasesByCaseIdDocumentsOptions({
+          path: { caseId: variables.path.caseId },
+        }).queryKey,
+      });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -122,14 +133,18 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
     try {
       if (mode === "create") {
         const created = await createMutation.mutateAsync({ body });
-        for (const file of pendingFiles) {
-          await uploadMutation.mutateAsync({
-            path: { caseId: created.id },
-            body: { file },
-          });
-        }
         queryClient.invalidateQueries({ queryKey: getCasesQueryKey() });
         toast.success("Case created");
+
+        if (pendingFiles.length > 0) {
+          enqueueCaseDocumentUploads(created.id, pendingFiles, (file) =>
+            uploadMutation.mutateAsync({
+              path: { caseId: created.id },
+              body: { file },
+            }),
+          );
+        }
+
         router.push(`/cases/${created.id}`);
       } else if (caseId) {
         await updateMutation.mutateAsync({
@@ -194,7 +209,10 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    mode === "create"
+      ? createMutation.isPending
+      : updateMutation.isPending;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
