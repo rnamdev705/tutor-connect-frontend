@@ -8,7 +8,14 @@ export default defineConfig({
   },
   plugins: [
     "@hey-api/typescript",
-    "@hey-api/sdk",
+    {
+      name: "@hey-api/client-fetch",
+      runtimeConfigPath: "./src/api/create-client-config",
+    },
+    {
+      name: "@hey-api/sdk",
+      client: "@hey-api/client-fetch",
+    },
     {
       name: "@tanstack/react-query",
       queryOptions: true,

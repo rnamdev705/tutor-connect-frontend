@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "@/lib/api-url";
 import { client } from "./client.gen";
 
 const TOKEN_STORAGE_KEY = "tutorconnect-token";
@@ -31,7 +32,7 @@ export function syncAuthCookieFromStorage(): void {
 }
 
 client.setConfig({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1",
+  baseUrl: getApiBaseUrl(),
   auth: () => getAuthToken() ?? undefined,
 });
 
