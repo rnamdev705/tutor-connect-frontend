@@ -6,7 +6,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 Storybook documents shared UI components and patterns used across the TutorConnect tuition marketplace.
 
-The **live app** talks to `tutorConnect-api` via an OpenAPI-generated client. Storybook uses **fixtures** (`src/stories/fixtures/mock-data.ts`) for isolated component stories so you can browse UI without running the API.
+The **live app** talks to `tutorConnect-api` via an OpenAPI-generated client. Storybook documents UI components; stories that need data use inline `args` in the story file. API-backed stories (e.g. invite modals) require a running backend.
 
 ## Stack
 
@@ -58,9 +58,9 @@ The **live app** talks to `tutorConnect-api` via an OpenAPI-generated client. St
       <td>JWT session via API</td>
     </tr>
     <tr>
-      <td>Storybook fixtures</td>
-      <td><code>src/stories/fixtures/</code></td>
-      <td>Typed mock data for stories only</td>
+      <td>Stories</td>
+      <td><code>src/stories/</code></td>
+      <td>Component catalog; sample props defined in story files</td>
     </tr>
   </tbody>
 </table>
@@ -94,7 +94,7 @@ Requires API seed (`npm run db:seed` in `tutorConnect-api`):
 ## Running locally
 
 ```bash
-# Component catalog (fixtures — no API required for most stories)
+# Component catalog (most stories work offline; API-backed modals need tutorConnect-api)
 npm run storybook   # http://localhost:6006
 
 # Full app (API required)

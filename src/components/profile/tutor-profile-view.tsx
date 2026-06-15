@@ -35,7 +35,7 @@ import {
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { PendingTutorDocumentRow } from "@/components/documents/pending-document-rows";
-import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
@@ -236,7 +236,7 @@ export function TutorProfileView() {
                           {formatFileSize(d.sizeBytes)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {deleting ? <DeletingStatusCell /> : formatDate(d.createdAt)}
+                          {deleting ? <LoadingStatusCell label="Deleting..." /> : formatDate(d.createdAt)}
                         </TableCell>
                         <TableCell>
                           {deleting ? null : (

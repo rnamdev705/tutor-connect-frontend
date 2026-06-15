@@ -1,20 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { TutorCard } from "@/components/tutors/tutor-card";
-import { mockTutors } from "@/stories/fixtures/mock-data";
 import type { TutorProfileSummary } from "@/api/types.gen";
 
-function toSummary(tutor: (typeof mockTutors)[0]): TutorProfileSummary {
-  return {
-    id: tutor.id,
-    tutorId: tutor.tutorId,
-    displayName: tutor.displayName,
-    qualifications: tutor.qualifications,
-    experiences: [],
-    teachingBackground: tutor.teachingBackground,
-    yearsOfExperience: tutor.yearsOfExperience,
-    subjectsTaught: tutor.subjectsTaught,
-  };
-}
+const sampleTutor: TutorProfileSummary = {
+  id: "tutor-1",
+  tutorId: "user-tutor-1",
+  displayName: "James Chen",
+  qualifications: ["MSc Mathematics, Imperial College"],
+  experiences: ["Head of Maths Department"],
+  teachingBackground: "12 years classroom experience across GCSE and A-Level.",
+  yearsOfExperience: 12,
+  subjectsTaught: ["Mathematics", "Physics"],
+};
 
 const meta = {
   title: "Features/TutorCard",
@@ -35,17 +32,30 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    tutor: toSummary(mockTutors[0]),
+    tutor: sampleTutor,
   },
 };
 
 export const Grid: Story = {
-  args: { tutor: toSummary(mockTutors[0]) },
   render: () => (
     <div className="grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {mockTutors.slice(0, 3).map((tutor) => (
-        <TutorCard key={tutor.id} tutor={toSummary(tutor)} />
-      ))}
+      <TutorCard tutor={sampleTutor} />
+      <TutorCard
+        tutor={{
+          ...sampleTutor,
+          id: "tutor-2",
+          displayName: "Alice Wong",
+          subjectsTaught: ["English", "History"],
+        }}
+      />
+      <TutorCard
+        tutor={{
+          ...sampleTutor,
+          id: "tutor-3",
+          displayName: "Michael Okonkwo",
+          subjectsTaught: ["Chemistry", "Biology"],
+        }}
+      />
     </div>
   ),
 };

@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/common/empty-state";
-import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { PendingCaseDocumentRow } from "@/components/documents/pending-document-rows";
 import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { formatDate, formatFileSize } from "@/lib/format";
@@ -142,7 +142,7 @@ export function CaseDetailDocumentsCard({
                         {d.uploadedByName}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {deleting ? <DeletingStatusCell /> : formatDate(d.createdAt)}
+                        {deleting ? <LoadingStatusCell label="Deleting..." /> : formatDate(d.createdAt)}
                       </TableCell>
                       <TableCell>
                         {!deleting && (

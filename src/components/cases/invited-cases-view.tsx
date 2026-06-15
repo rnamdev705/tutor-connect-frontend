@@ -38,10 +38,7 @@ import {
   ListFilterToolbar,
   useUrlSyncedSearch,
 } from "@/components/common/list-filter-toolbar";
-import {
-  AcceptingStatusCell,
-  MatchingStatusCell,
-} from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -221,11 +218,21 @@ export function InvitedCasesView() {
                       <TableCell className="text-muted-foreground">{c.level}</TableCell>
                       <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
                       <TableCell>
-                        {accepting ? <MatchingStatusCell /> : <StatusBadge status={c.status} />}
+                        {accepting ? (
+                          <LoadingStatusCell
+                            label="Matching..."
+                            className="font-medium text-emerald-700"
+                          />
+                        ) : (
+                          <StatusBadge status={c.status} />
+                        )}
                       </TableCell>
                       <TableCell>
                         {accepting ? (
-                          <AcceptingStatusCell />
+                          <LoadingStatusCell
+                            label="Accepting..."
+                            className="font-medium text-emerald-700"
+                          />
                         ) : (
                           <StatusBadge status={invitation.status} />
                         )}

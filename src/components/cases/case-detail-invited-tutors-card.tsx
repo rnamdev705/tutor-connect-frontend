@@ -20,10 +20,7 @@ import {
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
-import {
-  InvitingStatusCell,
-  RemovingStatusCell,
-} from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { formatDate } from "@/lib/format";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
 import type { CaseDetail } from "@/api/types.gen";
@@ -105,7 +102,7 @@ export function CaseDetailInvitedTutorsCard({
                     <UserAvatar name={inv.tutorName} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{inv.tutorName}</p>
-                      <InvitingStatusCell />
+                      <LoadingStatusCell label="Inviting..." />
                     </div>
                   </li>
                 );
@@ -126,7 +123,7 @@ export function CaseDetailInvitedTutorsCard({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{tutorName}</p>
                     {revoking ? (
-                      <RemovingStatusCell />
+                      <LoadingStatusCell label="Removing..." />
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         Invited {formatDate(inv.invitedAt)}

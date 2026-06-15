@@ -82,7 +82,7 @@ src/
 │   ├── hooks/
 │   └── validations/
 ├── proxy.ts             # Route protection (Next.js 16)
-└── stories/             # Storybook fixtures
+└── stories/             # Storybook stories
 docs/                    # Markdown documentation (this folder)
 ```
 

@@ -6,7 +6,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 ## Overview
 
-The production app uses an **OpenAPI-generated client** and **TanStack Query**. Storybook uses **fixtures** for isolated UI stories.
+The production app uses an **OpenAPI-generated client** and **TanStack Query**. Storybook stories pass sample props via `args` where needed.
 
 ## Generated client (`src/api/`)
 
@@ -38,9 +38,9 @@ Never hand-edit `*.gen.ts` files.
 
 List pages pass `page`, `limit`, `search`, and filters to the API. Search is debounced in `ListFilterToolbar`.
 
-## Storybook fixtures
+## Storybook sample data
 
-`src/stories/fixtures/mock-data.ts` provides typed `Case` and `TutorProfileSummary` samples for stories. The `withMockTutorsQuery` decorator seeds TanStack Query so `InviteTutorModal` renders without a running API.
+Feature stories (e.g. `TutorCard`, `CasesTable`) define minimal typed sample objects in the story file. No shared fixtures folder — keeps stories self-contained.
 
 ## Environment
 

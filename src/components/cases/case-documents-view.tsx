@@ -43,7 +43,7 @@ import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation
 import {
   PendingCaseDocumentRow,
 } from "@/components/documents/pending-document-rows";
-import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -372,7 +372,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {deleting ? (
-                              <DeletingStatusCell />
+                              <LoadingStatusCell label="Deleting..." />
                             ) : (
                               formatDate(row.createdAt)
                             )}

@@ -28,7 +28,7 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { PaginationControls } from "@/components/common/pagination-controls";
-import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import {
   FilterSelect,
   ListFilterToolbar,
@@ -66,7 +66,7 @@ function CaseTableRow({
       <TableCell className="text-muted-foreground">{caseItem.level}</TableCell>
       <TableCell>{formatCurrency(caseItem.budgetPerHour)}/hr</TableCell>
       <TableCell>
-        {isDeleting ? <DeletingStatusCell /> : <StatusBadge status={caseItem.status} />}
+        {isDeleting ? <LoadingStatusCell label="Deleting..." /> : <StatusBadge status={caseItem.status} />}
       </TableCell>
       <TableCell>{caseItem.invitedCount}</TableCell>
       <TableCell className="text-muted-foreground">

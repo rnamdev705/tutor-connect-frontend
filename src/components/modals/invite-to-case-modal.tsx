@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
-import { InvitingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import { formatCurrency } from "@/lib/format";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
@@ -144,7 +144,7 @@ export function InviteToCaseModal({
                         </p>
                       </div>
                       {isInviting ? (
-                        <InvitingStatusCell />
+                        <LoadingStatusCell label="Inviting..." />
                       ) : invitationStatus ? (
                         <StatusBadge status={invitationStatus} />
                       ) : null}

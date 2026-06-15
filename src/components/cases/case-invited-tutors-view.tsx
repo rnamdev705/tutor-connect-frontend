@@ -35,10 +35,7 @@ import { InvitedTutorListSkeleton } from "@/components/common/content-skeletons"
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
-import {
-  InvitingStatusCell,
-  RemovingStatusCell,
-} from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
@@ -255,9 +252,9 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{row.tutorName}</p>
                         {tutorInvitePending ? (
-                          <InvitingStatusCell />
+                          <LoadingStatusCell label="Inviting..." />
                         ) : revoking ? (
-                          <RemovingStatusCell />
+                          <LoadingStatusCell label="Removing..." />
                         ) : (
                           <p className="text-xs text-muted-foreground">
                             Invited {formatDate(row.invitedAt)}

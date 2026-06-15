@@ -1,18 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
-import { withMockTutorsQuery } from "../decorators/with-mock-tutors";
 
 const meta = {
   title: "Modals/InviteTutorModal",
   component: InviteTutorModal,
   tags: ["autodocs"],
-  decorators: [withMockTutorsQuery],
   parameters: {
     docs: {
       description: {
         component:
-          "Searchable tutor picker for parents inviting tutors to a case. Uses server-side API search in the app; Storybook seeds mock tutors via TanStack Query.",
+          "Searchable tutor picker for parents inviting tutors to a case. Requires tutorConnect-api running for tutor search.",
       },
     },
   },

@@ -51,9 +51,9 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>JWT login/register/logout via API</td>
     </tr>
     <tr>
-      <td>Storybook fixtures</td>
-      <td><code>src/stories/fixtures/mock-data.ts</code></td>
-      <td>Typed sample data for isolated stories (not used in production app)</td>
+      <td>Stories</td>
+      <td><code>src/stories/</code></td>
+      <td>Storybook component catalog with inline story args</td>
     </tr>
   </tbody>
 </table>
@@ -65,7 +65,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - **Access control:** `proxy.ts` + `AppShell` + API authorization + role checks in views.
 - **Forms:** `react-hook-form` + Zod schemas in `lib/validations/`.
 - **Empty/error UI:** Shared `EmptyState`, `ErrorState`, and `getApiErrorMessage()` for safe toasts.
-- **Storybook:** Global `withStoryProviders` decorator supplies TanStack Query; API-dependent modals use `withMockTutorsQuery` to seed cache.
+- **Storybook:** Global `withStoryProviders` decorator supplies TanStack Query. API-dependent stories need tutorConnect-api running.
 
 ## Protected route group
 

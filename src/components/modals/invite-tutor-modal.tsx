@@ -16,7 +16,7 @@ import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { StatusBadge } from "@/components/common/status-badge";
-import { InvitingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import {
   getExperienceSummary,
@@ -147,7 +147,7 @@ export function InviteTutorModal({
                     </p>
                   </div>
                   {isInviting ? (
-                    <InvitingStatusCell />
+                    <LoadingStatusCell label="Inviting..." />
                   ) : invitationStatus ? (
                     <StatusBadge status={invitationStatus} />
                   ) : null}

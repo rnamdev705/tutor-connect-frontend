@@ -1,5 +1,5 @@
 import { TableCell, TableRow } from "@/components/ui/table";
-import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { formatFileSize } from "@/lib/format";
 import type { PendingDocumentUpload } from "@/lib/hooks/use-pending-document-uploads";
 
@@ -15,7 +15,7 @@ export function PendingCaseDocumentRow({ upload }: { upload: PendingDocumentUplo
       </TableCell>
       <TableCell className="text-muted-foreground">—</TableCell>
       <TableCell>
-        <DeletingStatusCell />
+        <LoadingStatusCell label="Uploading..." />
       </TableCell>
       <TableCell />
     </TableRow>
@@ -30,7 +30,7 @@ export function PendingTutorDocumentRow({ upload }: { upload: PendingDocumentUpl
         {formatFileSize(upload.sizeBytes)}
       </TableCell>
       <TableCell>
-        <DeletingStatusCell />
+        <LoadingStatusCell label="Uploading..." />
       </TableCell>
       <TableCell />
     </TableRow>
