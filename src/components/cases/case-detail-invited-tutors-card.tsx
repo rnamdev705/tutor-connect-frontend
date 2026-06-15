@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
+import { Eye, MoreHorizontal, Trash2, UserPlus, Users, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,8 +24,10 @@ import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { formatDate } from "@/lib/format";
 import {
   canInviteTutorsToCase,
+  canReinviteTutor,
   canRevokeInvitation,
   inviteClosedMessage,
+  reinviteStatusHint,
 } from "@/lib/case-invites";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
 import type { CaseDetail } from "@/api/types.gen";
@@ -39,7 +41,9 @@ interface CaseDetailInvitedTutorsCardProps {
   hasPendingRevokes: boolean;
   caseIsDeleting: boolean;
   isRevoking: (tutorUserId: string) => boolean;
+  invitingTutorIds?: string[];
   onInviteOpen: () => void;
+  onReinvite?: (tutorProfileId: string, tutorName: string) => void;
   onRemoveInvitation: (tutorUserId: string, tutorName: string) => void;
 }
 
@@ -50,8 +54,10 @@ export function CaseDetailInvitedTutorsCard({
   inviteInProgress,
   hasPendingRevokes,
   caseIsDeleting,
+  invitingTutorIds = [],
   isRevoking,
   onInviteOpen,
+  onReinvite,
   onRemoveInvitation,
 }: CaseDetailInvitedTutorsCardProps) {
   const router = useRouter();
@@ -121,12 +127,16 @@ export function CaseDetailInvitedTutorsCard({
               const inv = item.row;
               const revoking = isRevoking(inv.tutorUserId);
               const tutorName = inv.tutor?.displayName ?? "Unknown tutor";
+              const reinviting =
+                inv.tutorProfileId != null &&
+                invitingTutorIds.includes(inv.tutorProfileId);
+              const reinviteHint = reinviteStatusHint(inv.status);
 
               return (
                 <li
                   key={inv.id}
                   className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${
-                    revoking ? "bg-muted/40 opacity-60" : ""
+                    revoking || reinviting ? "bg-muted/40 opacity-60" : ""
                   }`}
                 >
                   <UserAvatar name={tutorName} size="sm" />
@@ -134,14 +144,21 @@ export function CaseDetailInvitedTutorsCard({
                     <p className="truncate text-sm font-medium">{tutorName}</p>
                     {revoking ? (
                       <LoadingStatusCell label="Removing..." />
+                    ) : reinviting ? (
+                      <LoadingStatusCell label="Re-inviting..." />
                     ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Invited {formatDate(inv.invitedAt)}
-                      </p>
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Invited {formatDate(inv.invitedAt)}
+                        </p>
+                        {reinviteHint && (
+                          <p className="text-xs text-muted-foreground">{reinviteHint}</p>
+                        )}
+                      </>
                     )}
                   </div>
-                  {!revoking && <StatusBadge status={inv.status} />}
-                  {!revoking && (
+                  {!revoking && !reinviting && <StatusBadge status={inv.status} />}
+                  {!revoking && !reinviting && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -162,6 +179,19 @@ export function CaseDetailInvitedTutorsCard({
                             View Profile
                           </DropdownMenuItem>
                         )}
+                        {canReinviteTutor(inv.status) &&
+                          canInvite &&
+                          inv.tutorProfileId &&
+                          onReinvite && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                onReinvite(inv.tutorProfileId!, tutorName)
+                              }
+                            >
+                              <Mail className="mr-2 h-4 w-4" />
+                              Re-invite
+                            </DropdownMenuItem>
+                          )}
                         {canRevokeInvitation(inv.status) && (
                           <DropdownMenuItem
                             className="text-destructive"

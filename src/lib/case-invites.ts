@@ -62,6 +62,21 @@ export function blocksNewInviteForInvitationStatus(
   return status === "pending" || status === "accepted";
 }
 
+/** Parent may send a fresh invite when the tutor previously declined or was superseded. */
+export function canReinviteTutor(status: AppStatus | string): boolean {
+  return status === "declined" || status === "superseded";
+}
+
+export function reinviteStatusHint(status: AppStatus | string): string | null {
+  if (status === "declined") {
+    return "Previously declined — you can invite again.";
+  }
+  if (status === "superseded") {
+    return "Previously superseded — you can invite again.";
+  }
+  return null;
+}
+
 export function isCaseClosed(status: string): boolean {
   return status === "closed";
 }

@@ -8,8 +8,9 @@ import {
 } from "@/api/@tanstack/react-query.gen";
 import type { CaseDetail } from "@/api/types.gen";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { canReinviteTutor } from "@/lib/case-invites";
 import {
-  appendInvitationToCaseDetail,
+  upsertInvitationInCaseDetail,
   removeInvitationFromCaseDetail,
 } from "@/lib/queries/case-detail-cache";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
@@ -28,15 +29,26 @@ export function useCaseInvitationMutations(caseId: string) {
   const inviteMutation = useMutation({
     ...postCasesByIdInvitationsMutation(),
     onSuccess: (invitation, variables) => {
+      const tutorProfileId = variables.body?.tutorProfileId;
+      const previous = queryClient.getQueryData<CaseDetail>(
+        getCasesByIdQueryKey({ path: { id: caseId } }),
+      );
+      const wasReinvite =
+        tutorProfileId != null &&
+        previous?.invitations.some(
+          (inv) =>
+            inv.tutorProfileId === tutorProfileId && canReinviteTutor(inv.status),
+        );
+
       patchCaseDetail((current) =>
-        appendInvitationToCaseDetail(
+        upsertInvitationInCaseDetail(
           current,
           { ...invitation, caseId },
-          variables.body?.tutorProfileId,
+          tutorProfileId,
         ),
       );
       void invalidateAllCasesList(queryClient);
-      toast.success("Tutor invited successfully");
+      toast.success(wasReinvite ? "Invitation re-sent" : "Tutor invited successfully");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });

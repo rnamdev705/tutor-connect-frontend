@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
-import { StatusBadge } from "@/components/common/status-badge";
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import {
@@ -23,7 +22,8 @@ import {
   getQualificationSummary,
 } from "@/lib/format";
 import { tutorsSearchQueryOptions } from "@/lib/queries/list-queries";
-import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
+import { blocksNewInviteForInvitationStatus, canReinviteTutor } from "@/lib/case-invites";
+import { InvitePickerStatus } from "@/components/cases/invite-picker-status";
 import { textOverflow } from "@/lib/text-overflow";
 import { cn } from "@/lib/utils";
 import type { TutorProfileSummary } from "@/api/types.gen";
@@ -156,9 +156,9 @@ export function InviteTutorModal({
                     </p>
                   </div>
                   {isInviting ? (
-                    <LoadingStatusCell label="Inviting..." />
+                    <InvitePickerStatus isInviting />
                   ) : invitationStatus ? (
-                    <StatusBadge status={invitationStatus} />
+                    <InvitePickerStatus status={invitationStatus} />
                   ) : null}
                 </button>
               );
@@ -178,7 +178,9 @@ export function InviteTutorModal({
               invitingTutorIds.includes(selected.id)
             }
           >
-            Confirm Invitation
+            {selected && canReinviteTutor(invitedByTutorId.get(selected.id) ?? "")
+              ? "Re-send Invitation"
+              : "Confirm Invitation"}
           </Button>
         </DialogFooter>
       </DialogContent>

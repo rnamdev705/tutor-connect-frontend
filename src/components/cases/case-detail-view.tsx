@@ -273,8 +273,17 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               inviteInProgress={inviteInProgress}
               hasPendingRevokes={hasPendingRevokes}
               caseIsDeleting={caseIsDeleting}
+              invitingTutorIds={pendingInvites.map((invite) => invite.tutorProfileId)}
               isRevoking={isRevoking}
               onInviteOpen={() => setInviteOpen(true)}
+              onReinvite={(tutorProfileId, tutorName) =>
+                trackInvite(tutorProfileId, tutorName, () =>
+                  inviteMutation.mutateAsync({
+                    path: { id: caseId },
+                    body: { tutorProfileId },
+                  }),
+                )
+              }
               onRemoveInvitation={(tutorUserId, tutorName) =>
                 trackRevoke(tutorUserId, tutorName, () =>
                   revokeMutation.mutateAsync({

@@ -2,30 +2,47 @@ import type { CaseDetail } from "@/api/types.gen";
 
 type CaseInvitationRecord = CaseDetail["invitations"][number];
 
-export function appendInvitationToCaseDetail(
+export function upsertInvitationInCaseDetail(
   current: CaseDetail,
   invitation: CaseInvitationRecord,
   tutorProfileId?: string,
 ): CaseDetail {
-  if (
-    current.invitations.some(
-      (item) =>
-        item.id === invitation.id ||
-        (tutorProfileId && item.tutorProfileId === tutorProfileId),
-    )
-  ) {
-    return current;
+  const profileId = tutorProfileId ?? invitation.tutorProfileId;
+  const existingIndex = current.invitations.findIndex(
+    (item) =>
+      item.id === invitation.id ||
+      (profileId != null && item.tutorProfileId === profileId) ||
+      item.tutorUserId === invitation.tutorUserId,
+  );
+
+  if (existingIndex >= 0) {
+    const invitations = [...current.invitations];
+    invitations[existingIndex] = {
+      ...invitations[existingIndex],
+      ...invitation,
+      caseId: current.id,
+    };
+    return { ...current, invitations };
   }
 
   return {
     ...current,
     invitedCount: current.invitedCount + 1,
     invitedTutorIds:
-      tutorProfileId && !current.invitedTutorIds.includes(tutorProfileId)
-        ? [...current.invitedTutorIds, tutorProfileId]
+      profileId && !current.invitedTutorIds.includes(profileId)
+        ? [...current.invitedTutorIds, profileId]
         : current.invitedTutorIds,
     invitations: [{ ...invitation, caseId: current.id }, ...current.invitations],
   };
+}
+
+/** @deprecated Prefer upsertInvitationInCaseDetail */
+export function appendInvitationToCaseDetail(
+  current: CaseDetail,
+  invitation: CaseInvitationRecord,
+  tutorProfileId?: string,
+): CaseDetail {
+  return upsertInvitationInCaseDetail(current, invitation, tutorProfileId);
 }
 
 export function removeInvitationFromCaseDetail(

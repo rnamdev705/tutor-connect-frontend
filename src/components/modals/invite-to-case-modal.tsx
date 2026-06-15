@@ -16,11 +16,11 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
-import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import { formatCurrency } from "@/lib/format";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
-import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
+import { blocksNewInviteForInvitationStatus, canReinviteTutor } from "@/lib/case-invites";
+import { InvitePickerStatus } from "@/components/cases/invite-picker-status";
 import { cn } from "@/lib/utils";
 import type { Case } from "@/api/types.gen";
 
@@ -149,9 +149,9 @@ export function InviteToCaseModal({
                         </p>
                       </div>
                       {isInviting ? (
-                        <LoadingStatusCell label="Inviting..." />
+                        <InvitePickerStatus isInviting />
                       ) : invitationStatus ? (
-                        <StatusBadge status={invitationStatus} />
+                        <InvitePickerStatus status={invitationStatus} />
                       ) : null}
                     </button>
                   );
@@ -173,7 +173,10 @@ export function InviteToCaseModal({
               invitingCaseIds.includes(selected.id)
             }
           >
-            Send Invitation
+            {selected &&
+            canReinviteTutor(selected.tutorInvitation?.status ?? "")
+              ? "Re-send Invitation"
+              : "Send Invitation"}
           </Button>
         </DialogFooter>
       </DialogContent>
