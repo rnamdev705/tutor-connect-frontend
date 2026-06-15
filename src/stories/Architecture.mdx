@@ -21,6 +21,11 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>App Router pages, layouts, metadata</td>
     </tr>
     <tr>
+      <td>Route guard</td>
+      <td><code>src/proxy.ts</code></td>
+      <td>Cookie-based protection (Next.js 16 — replaces <code>middleware.ts</code>)</td>
+    </tr>
+    <tr>
       <td>Features</td>
       <td><code>src/components/</code></td>
       <td>Role-specific views (cases, tutors, profile, dashboard)</td>
@@ -31,26 +36,39 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>Reusable primitives documented in Storybook</td>
     </tr>
     <tr>
-      <td>Data</td>
-      <td><code>src/lib/data.ts</code></td>
-      <td>Selectors over mock fixtures</td>
+      <td>API client</td>
+      <td><code>src/api/</code></td>
+      <td>OpenAPI-generated SDK; <code>create-client-config.ts</code> reads <code>NEXT_PUBLIC_API_URL</code></td>
+    </tr>
+    <tr>
+      <td>Data / cache</td>
+      <td><code>src/lib/queries/</code></td>
+      <td>TanStack Query options, invalidation, optimistic cache patches</td>
     </tr>
     <tr>
       <td>Auth</td>
       <td><code>src/lib/auth-context.tsx</code></td>
-      <td>Client session, login/register/logout</td>
+      <td>JWT login/register/logout via API</td>
+    </tr>
+    <tr>
+      <td>Storybook fixtures</td>
+      <td><code>src/stories/fixtures/mock-data.ts</code></td>
+      <td>Typed sample data for isolated stories (not used in production app)</td>
     </tr>
   </tbody>
 </table>
 
 ## Patterns
 
-- **Server + client split:** Detail routes fetch data on the server; interactive views are client components.
-- **Access control:** `AppShell` guards authenticated routes; feature views check role via `useAuth()`.
-- **Conditionals:** `react-if` (`If`, `Then`, `Else`, `When`) instead of nested ternaries.
+- **Server-side lists:** Cases, tutors, and invitations use API pagination, search, and filters (debounced ~300 ms).
+- **Thin route pages:** `*View` client components own UI and data fetching.
+- **Access control:** `proxy.ts` + `AppShell` + API authorization + role checks in views.
 - **Forms:** `react-hook-form` + Zod schemas in `lib/validations/`.
-- **Empty/error UI:** Shared `EmptyState` and `ErrorState` components.
+- **Empty/error UI:** Shared `EmptyState`, `ErrorState`, and `getApiErrorMessage()` for safe toasts.
+- **Storybook:** Global `withStoryProviders` decorator supplies TanStack Query; API-dependent modals use `withMockTutorsQuery` to seed cache.
 
 ## Protected route group
 
 Authenticated pages live under `src/app/(app)/` and share `AppShell` (sidebar + top nav). Public routes: login, register, docs, unauthorized.
+
+Tutors with incomplete profiles are redirected to `/profile/edit` by `TutorProfileGate`.

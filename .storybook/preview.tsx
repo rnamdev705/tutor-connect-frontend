@@ -5,9 +5,10 @@ import {
   parameters as nextjsParameters,
 } from "@storybook/nextjs-vite/preview";
 import "@/app/globals.css";
+import { withStoryProviders } from "../src/stories/decorators/story-providers";
 
 export default definePreview({
-  decorators: nextjsDecorators,
+  decorators: [withStoryProviders, ...nextjsDecorators],
   loaders: [nextjsLoaders],
   parameters: {
     ...nextjsParameters,

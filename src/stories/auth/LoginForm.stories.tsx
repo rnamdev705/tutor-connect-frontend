@@ -12,7 +12,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Sign-in form validated with Zod (loginSchema). Demo: sarah@example.com or james@example.com / Password1.",
+          "Sign-in form validated with Zod (loginSchema). Submitting calls the API — start tutorConnect-api for interactive login, or use the visual layout offline.",
       },
     },
   },

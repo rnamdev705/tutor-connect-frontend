@@ -4,6 +4,13 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 # Routing
 
+## Route protection
+
+1. **`src/proxy.ts`** — checks `tutorconnect-token` cookie; redirects unauthenticated users from protected paths.
+2. **`AppShell`** — client-side guard after hydration.
+
+Logged-in users visiting `/login` or `/register` are redirected to `/dashboard`.
+
 ## Public routes
 
 <table>
@@ -15,6 +22,10 @@ import { Meta } from "@storybook/addon-docs/blocks";
   </thead>
   <tbody>
     <tr>
+      <td><code>/</code></td>
+      <td>Redirect to dashboard or login</td>
+    </tr>
+    <tr>
       <td><code>/login</code></td>
       <td>Sign in</td>
     </tr>
@@ -23,13 +34,17 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>Create account</td>
     </tr>
     <tr>
+      <td><code>/docs</code></td>
+      <td>In-app documentation</td>
+    </tr>
+    <tr>
       <td><code>/unauthorized</code></td>
       <td>Access denied</td>
     </tr>
   </tbody>
 </table>
 
-## Protected routes (AppShell)
+## Protected routes (AppShell + proxy)
 
 <table>
   <thead>
@@ -47,8 +62,8 @@ import { Meta } from "@storybook/addon-docs/blocks";
     </tr>
     <tr>
       <td><code>/cases</code></td>
-      <td>Parent</td>
-      <td>My cases list</td>
+      <td>Parent, Tutor</td>
+      <td>Cases list (scoped by role via API)</td>
     </tr>
     <tr>
       <td><code>/cases/new</code></td>
@@ -61,19 +76,34 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>Case detail</td>
     </tr>
     <tr>
+      <td><code>/cases/[id]/edit</code></td>
+      <td>Parent</td>
+      <td>Edit case</td>
+    </tr>
+    <tr>
+      <td><code>/cases/[id]/documents</code></td>
+      <td>Parent, Tutor</td>
+      <td>Case documents</td>
+    </tr>
+    <tr>
+      <td><code>/cases/[id]/tutors</code></td>
+      <td>Parent</td>
+      <td>Invited tutors sub-view</td>
+    </tr>
+    <tr>
       <td><code>/tutors</code></td>
       <td>Parent</td>
-      <td>Tutor directory</td>
+      <td>Tutor directory (server search)</td>
     </tr>
     <tr>
       <td><code>/tutors/[id]</code></td>
       <td>Parent</td>
-      <td>Tutor profile</td>
+      <td>Tutor profile + invite</td>
     </tr>
     <tr>
       <td><code>/invitations</code></td>
       <td>Tutor</td>
-      <td>Invited cases</td>
+      <td>Invitation inbox</td>
     </tr>
     <tr>
       <td><code>/profile</code></td>
@@ -83,7 +113,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
     <tr>
       <td><code>/profile/edit</code></td>
       <td>Parent, Tutor</td>
-      <td>Edit profile</td>
+      <td>Edit profile (required for incomplete tutors)</td>
     </tr>
   </tbody>
 </table>
@@ -93,3 +123,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 **Parent:** Dashboard → My Cases → Tutor Directory → Profile
 
 **Tutor:** Dashboard → Invited Cases → My Profile
+
+## Next.js 16 note
+
+`middleware.ts` is deprecated — this project uses **`proxy.ts`** with `export function proxy()`. Same responsibility: intercept requests for redirects and auth cookies.

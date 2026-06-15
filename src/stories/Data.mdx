@@ -1,0 +1,56 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Data Layer" />
+
+# Data Layer
+
+## Overview
+
+The production app uses an **OpenAPI-generated client** and **TanStack Query**. Storybook uses **fixtures** for isolated UI stories.
+
+## Generated client (`src/api/`)
+
+| File | Purpose |
+|------|---------|
+| `types.gen.ts` | Request/response types |
+| `sdk.gen.ts` | Fetch functions per endpoint |
+| `@tanstack/react-query.gen.ts` | `*Options` and `*Mutation` helpers |
+| `create-client-config.ts` | Sets `baseUrl` from `NEXT_PUBLIC_API_URL` |
+| `setup.ts` | Auth header, 401 interceptor, cookie sync |
+
+Regenerate after API changes:
+
+```bash
+cd ../tutorConnect-api && npm run openapi:export
+npm run generate:api
+```
+
+Never hand-edit `*.gen.ts` files.
+
+## Query helpers (`src/lib/queries/`)
+
+| Module | Purpose |
+|--------|---------|
+| `list-queries.ts` | Cases, tutors, invitations list options |
+| `query-keys.ts` | Centralized query key constants |
+| `invalidate.ts` | Predicate-based cache invalidation |
+| `case-detail-cache.ts` | Optimistic patches for case detail |
+
+List pages pass `page`, `limit`, `search`, and filters to the API. Search is debounced in `ListFilterToolbar`.
+
+## Storybook fixtures
+
+`src/stories/fixtures/mock-data.ts` provides typed `Case` and `TutorProfileSummary` samples for stories. The `withMockTutorsQuery` decorator seeds TanStack Query so `InviteTutorModal` renders without a running API.
+
+## Environment
+
+```bash
+# .env.local (app + Storybook client setup)
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+```
+
+Host-only values work too — `lib/api-url.ts` adds `https://` and `/api/v1` when missing.
+
+## Upload limits
+
+From `lib/constants.ts` (must match API): PDF, DOC, DOCX, PNG, JPEG — max 10 MB.

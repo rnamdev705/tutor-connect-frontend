@@ -6,7 +6,7 @@ This folder documents the **Tuition Marketplace** frontend (`tuition-marketplace
 
 | Resource | Location |
 |----------|----------|
-| **Storybook (primary)** | `npm run storybook` → [http://localhost:6006](http://localhost:6006) |
+| **Storybook (primary)** | `npm run storybook` → [http://localhost:6006](http://localhost:6006) — Guides: Architecture, Auth, Routing, Data |
 | Live docs UI | `npm run dev` → [http://localhost:3000/docs](http://localhost:3000/docs) |
 | Architecture | [architecture.md](./architecture.md) |
 | Components | [components.md](./components.md) |

@@ -12,7 +12,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Registration form with role selection (parent/tutor). Password rules enforced via registerSchema in lib/validations/auth.ts.",
+          "Registration form with role selection (parent/tutor). Password rules via registerSchema. Submitting calls the API when tutorConnect-api is running.",
       },
     },
   },

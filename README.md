@@ -81,7 +81,7 @@ docs/                    # Markdown documentation
 |----------|----------|
 | Markdown docs | [`docs/README.md`](./docs/README.md) |
 | Live docs UI | [http://localhost:3000/docs](http://localhost:3000/docs) (when running) |
-| Storybook | `npm run storybook` |
+| Storybook | `npm run storybook` → [localhost:6006](http://localhost:6006) — Guides + component stories (fixtures; most work offline) |
 
 ## Production deploy
 

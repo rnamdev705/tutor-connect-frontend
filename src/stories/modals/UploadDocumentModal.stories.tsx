@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Drag-and-drop file upload with validation. Accepts PDF, DOC, DOCX, PNG, JPEG up to 10MB (see lib/constants.ts).",
+          "Drag-and-drop file upload with validation. Accepts PDF, DOC, DOCX, PNG, JPEG up to 10MB (see lib/constants.ts). Callback-only in Storybook — no API upload.",
       },
     },
   },

@@ -18,12 +18,17 @@ import { Meta } from "@storybook/addon-docs/blocks";
     <tr>
       <td>Auth context</td>
       <td><code>lib/auth-context.tsx</code></td>
-      <td>React Context — session state, login/register/logout</td>
+      <td>React Context — session state, login/register/logout via API</td>
     </tr>
     <tr>
-      <td>Auth store</td>
-      <td><code>lib/auth-store.ts</code></td>
-      <td>Credential lookup, demo users, localStorage registrations</td>
+      <td>API setup</td>
+      <td><code>api/setup.ts</code></td>
+      <td>JWT in localStorage + cookie sync, 401 redirect, base URL</td>
+    </tr>
+    <tr>
+      <td>Proxy guard</td>
+      <td><code>src/proxy.ts</code></td>
+      <td>Server-side route protection using <code>tutorconnect-token</code> cookie</td>
     </tr>
     <tr>
       <td>Validation</td>
@@ -31,24 +36,44 @@ import { Meta } from "@storybook/addon-docs/blocks";
       <td>Zod schemas for login and register forms</td>
     </tr>
     <tr>
+      <td>Safe errors</td>
+      <td><code>lib/api-error.ts</code></td>
+      <td>Filters internal/Prisma messages from UI copy</td>
+    </tr>
+    <tr>
       <td>Tutor hook</td>
       <td><code>lib/hooks/use-current-tutor.ts</code></td>
-      <td>Maps signed-in tutor user to TutorProfile</td>
+      <td>Loads tutor profile for signed-in tutor via API</td>
     </tr>
   </tbody>
 </table>
 
+## Session flow
+
+1. User submits login/register (Zod + react-hook-form).
+2. API returns JWT; stored in `localStorage` and mirrored to a cookie for `proxy.ts`.
+3. `GET /auth/me` restores session on load.
+4. `proxy.ts` guards protected routes on first navigation; `AppShell` guards after hydration.
+5. On `401`, client clears token and redirects to `/login`.
+
 ## Route protection
 
-`AppShell` redirects unauthenticated users to `/login`. After sign-in, users land on `/dashboard` with role-specific navigation.
+| Layer | Mechanism |
+|-------|-----------|
+| **proxy.ts** | Cookie check → redirect to `/login?next=…` |
+| **AppShell** | Client redirect if no authenticated user |
+| **TutorProfileGate** | Incomplete tutors → `/profile/edit` |
+| **API** | Authoritative access control on every endpoint |
 
 ## Feature-level gates
 
 - **Parent only:** Create/edit cases, invite tutors, upload case documents.
-- **Tutor only:** Browse cases, view invitations, edit tutor profile.
-- **Owner check:** `canManage` — parent must own the case to edit or delete.
+- **Tutor only:** Invitation inbox, accept/decline, profile documents.
+- **Owner check:** Parent must own the case to edit, invite, or delete.
 
 ## Demo accounts
+
+Seed the API with `npm run db:seed` in `tutorConnect-api`:
 
 <table>
   <thead>
@@ -72,4 +97,9 @@ import { Meta } from "@storybook/addon-docs/blocks";
   </tbody>
 </table>
 
-See **Auth** stories for `LoginForm` and `RegisterForm` components.
+## Storybook notes
+
+- **LoginForm / RegisterForm** stories wrap `AuthProvider` — visual layout works offline; submitting calls the real API if it is running.
+- Auth stories do not use the old local `auth-store`; credentials are validated by the backend.
+
+See **Auth** stories for form components.
