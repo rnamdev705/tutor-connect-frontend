@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Info } from "lucide-react";
 import {
   deleteCasesByIdMutation,
   deleteDocumentsByIdMutation,
@@ -28,7 +28,7 @@ import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateCaseData } from "@/lib/queries/invalidate";
-import { canInviteTutorsToCase, isCaseEditLocked } from "@/lib/case-invites";
+import { canDeleteCase, canInviteTutorsToCase, isCaseEditLocked, matchedCaseHint } from "@/lib/case-invites";
 import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
@@ -149,6 +149,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const inviteInProgress = activePendingInvites.length > 0;
   const caseIsDeleting = isDeletingCase(caseId);
   const canInvite = canInviteTutorsToCase(caseData.status);
+  const canDelete = canDeleteCase(caseData.status);
 
   return (
     <div className="relative space-y-6">
@@ -166,25 +167,36 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               {caseData.subject} · {caseData.level}
             </p>
           </div>
-          {canManage && !caseIsDeleting && !isCaseEditLocked(caseData.status) && (
+          {canManage && !caseIsDeleting && (
             <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <Link href={`/cases/${caseData.id}/edit`}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={caseIsDeleting}
-                onClick={() => setDeleteCaseOpen(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
+              {!isCaseEditLocked(caseData.status) && (
+                <Button variant="outline" asChild>
+                  <Link href={`/cases/${caseData.id}/edit`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  disabled={caseIsDeleting}
+                  onClick={() => setDeleteCaseOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              )}
             </div>
           )}
         </div>
+
+        {canManage && caseData.status === "matched" && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <p>{matchedCaseHint()}</p>
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-sm">

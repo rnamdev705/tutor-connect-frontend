@@ -43,8 +43,9 @@ import {
   resolvePaginationMeta,
 } from "@/lib/pagination";
 import { casesListQueryOptions } from "@/lib/queries/list-queries";
-import { invalidateAllCasesList } from "@/lib/queries/invalidate";
+import { invalidateCaseData } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
+import { canDeleteCase } from "@/lib/case-invites";
 import type { Case } from "@/api/types.gen";
 import { toast } from "sonner";
 
@@ -89,13 +90,15 @@ function CaseTableRow({
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => onDelete(caseItem)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+              {canDeleteCase(caseItem.status) && (
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => onDelete(caseItem)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -140,8 +143,8 @@ export function CasesListView() {
 
   const deleteMutation = useMutation({
     ...deleteCasesByIdMutation(),
-    onSuccess: () => {
-      void invalidateAllCasesList(queryClient);
+    onSuccess: (_, variables) => {
+      void invalidateCaseData(queryClient, variables.path.id);
       toast.success("Case deleted");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),

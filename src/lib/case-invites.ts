@@ -47,3 +47,12 @@ export function isCaseMatched(status: string): boolean {
 export function isCaseEditLocked(status: string): boolean {
   return status === "closed";
 }
+
+/** Only open cases may be deleted (matched and closed are kept for audit). */
+export function canDeleteCase(status: string): boolean {
+  return status === "open";
+}
+
+export function matchedCaseHint(): string {
+  return "A tutor has accepted. Close the case when tuition is complete.";
+}

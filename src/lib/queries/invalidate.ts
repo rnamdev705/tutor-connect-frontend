@@ -19,6 +19,7 @@ export function invalidateCaseData(queryClient: QueryClient, caseId: string) {
   return Promise.all([
     invalidateAllCasesList(queryClient),
     invalidateCaseDetail(queryClient, caseId),
+    invalidateAllInvitationsList(queryClient),
   ]);
 }
 
