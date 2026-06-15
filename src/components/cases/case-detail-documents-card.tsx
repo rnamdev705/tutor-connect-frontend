@@ -35,7 +35,6 @@ interface CaseDetailDocumentsCardProps {
   documentsLoading: boolean;
   caseIsDeleting: boolean;
   canManage: boolean;
-  userId?: string;
   isDeletingDocument: (id: string) => boolean;
   onUploadOpen: () => void;
   onDeleteDocument: (documentId: string) => void;
@@ -48,7 +47,6 @@ export function CaseDetailDocumentsCard({
   documentsLoading,
   caseIsDeleting,
   canManage,
-  userId,
   isDeletingDocument,
   onUploadOpen,
   onDeleteDocument,
@@ -73,15 +71,17 @@ export function CaseDetailDocumentsCard({
             <CardDescription>{documentCount} file(s)</CardDescription>
           )}
         </div>
-        <Button
-          size="sm"
-          className="shrink-0"
-          disabled={caseIsDeleting}
-          onClick={onUploadOpen}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          Upload
-        </Button>
+        {canManage && (
+          <Button
+            size="sm"
+            className="shrink-0"
+            disabled={caseIsDeleting}
+            onClick={onUploadOpen}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {showDocumentsSkeleton ? (
@@ -94,11 +94,19 @@ export function CaseDetailDocumentsCard({
           <EmptyState
             icon={FileText}
             title="No documents yet"
-            description="Upload supporting files for this case."
-            actionLabel="Upload Document"
-            onAction={() => {
-              if (!caseIsDeleting) onUploadOpen();
-            }}
+            description={
+              canManage
+                ? "Upload supporting files for this case."
+                : "No documents have been attached to this case yet."
+            }
+            actionLabel={canManage ? "Upload Document" : undefined}
+            onAction={
+              canManage
+                ? () => {
+                    if (!caseIsDeleting) onUploadOpen();
+                  }
+                : undefined
+            }
             variant="compact"
           />
         ) : (
@@ -121,7 +129,7 @@ export function CaseDetailDocumentsCard({
                   }
 
                   const d = item.row;
-                  const canDeleteDocument = canManage || userId === d.uploadedById;
+                  const canDeleteDocument = canManage;
                   const deleting = isDeletingDocument(d.id);
 
                   return (

@@ -291,7 +291,6 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             documentsLoading={documentsLoading}
             caseIsDeleting={caseIsDeleting}
             canManage={canManage}
-            userId={user?.id}
             isDeletingDocument={isDeletingDocument}
             onUploadOpen={() => setUploadOpen(true)}
             onDeleteDocument={(id) => {

@@ -266,10 +266,12 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
             </p>
           </div>
         </div>
-        <Button onClick={() => setUploadOpen(true)}>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload
-        </Button>
+        {canManage && (
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload
+          </Button>
+        )}
       </div>
 
       <Card className="shadow-sm">
@@ -314,9 +316,13 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
               <EmptyState
                 icon={FileText}
                 title="No documents found"
-                description="Try adjusting your search or filters, or upload a new file."
-                actionLabel="Upload Document"
-                onAction={() => setUploadOpen(true)}
+                description={
+                  canManage
+                    ? "Try adjusting your search or filters, or upload a new file."
+                    : "Try adjusting your search or filters."
+                }
+                actionLabel={canManage ? "Upload Document" : undefined}
+                onAction={canManage ? () => setUploadOpen(true) : undefined}
                 variant="compact"
               />
             </Then>
@@ -349,8 +355,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                         );
                       }
 
-                      const canDeleteDocument =
-                        canManage || user?.id === row.uploadedById;
+                      const canDeleteDocument = canManage;
                       const deleting = isDeletingDocument(row.id);
 
                       return (
