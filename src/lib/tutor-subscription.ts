@@ -1,51 +1,75 @@
 import type { TutorMeProfile } from "@/api/types.gen";
+import { TUTOR_FREE_RESPONSE_LIMIT } from "@/lib/constants";
 
-type TutorSubscriptionFields = Pick<
-  TutorMeProfile,
-  "responsesUsed" | "responseLimit" | "subscribed" | "responsesRemaining"
->;
+export type TutorSubscriptionState = {
+  responsesUsed: number;
+  responseLimit: number;
+  subscribed: boolean;
+  responsesRemaining: number | null;
+};
 
-export function isTutorSubscribed(
-  tutor: TutorSubscriptionFields | undefined,
-): boolean {
-  return tutor?.subscribed === true;
+type TutorSubscriptionInput = Partial<
+  Pick<
+    TutorMeProfile,
+    "responsesUsed" | "responseLimit" | "subscribed" | "responsesRemaining" | "subscribedAt"
+  >
+> | undefined;
+
+/** Fills safe defaults when API fields are missing (e.g. stale cache or old deploy). */
+export function normalizeTutorSubscription(
+  tutor: TutorSubscriptionInput,
+): TutorSubscriptionState {
+  const responseLimit =
+    typeof tutor?.responseLimit === "number" && tutor.responseLimit > 0
+      ? tutor.responseLimit
+      : TUTOR_FREE_RESPONSE_LIMIT;
+  const responsesUsed =
+    typeof tutor?.responsesUsed === "number" && tutor.responsesUsed >= 0
+      ? tutor.responsesUsed
+      : 0;
+  const subscribed =
+    tutor?.subscribed === true || tutor?.subscribedAt != null;
+
+  const responsesRemaining = subscribed
+    ? null
+    : typeof tutor?.responsesRemaining === "number"
+      ? Math.max(0, tutor.responsesRemaining)
+      : Math.max(0, responseLimit - responsesUsed);
+
+  return {
+    responsesUsed,
+    responseLimit,
+    subscribed,
+    responsesRemaining,
+  };
+}
+
+export function isTutorSubscribed(subscription: TutorSubscriptionState): boolean {
+  return subscription.subscribed;
 }
 
 export function isResponseLimitReached(
-  tutor: TutorSubscriptionFields | undefined,
+  subscription: TutorSubscriptionState | undefined,
 ): boolean {
-  if (!tutor || isTutorSubscribed(tutor)) {
+  if (!subscription || subscription.subscribed) {
     return false;
   }
 
-  return tutor.responsesUsed >= tutor.responseLimit;
-}
-
-export function tutorResponsesRemaining(
-  tutor: TutorSubscriptionFields | undefined,
-): number | null {
-  if (!tutor || isTutorSubscribed(tutor)) {
-    return null;
-  }
-
-  return tutor.responsesRemaining ?? Math.max(0, tutor.responseLimit - tutor.responsesUsed);
+  return subscription.responsesUsed >= subscription.responseLimit;
 }
 
 export function tutorResponseLimitMessage(
-  tutor: TutorSubscriptionFields | undefined,
+  subscription: TutorSubscriptionState,
 ): string {
-  if (!tutor) {
-    return "Subscribe to respond to more case invitations.";
-  }
-
-  if (isTutorSubscribed(tutor)) {
+  if (subscription.subscribed) {
     return "You have unlimited case responses.";
   }
 
-  const remaining = tutorResponsesRemaining(tutor) ?? 0;
-  if (remaining === 0) {
-    return `You've used all ${tutor.responseLimit} free responses. Subscribe to continue.`;
+  const { responsesUsed, responseLimit, responsesRemaining } = subscription;
+
+  if (responsesRemaining === 0) {
+    return `You've used all ${responseLimit} free responses. Subscribe to accept or decline more invitations.`;
   }
 
-  return `${remaining} of ${tutor.responseLimit} free responses remaining.`;
+  return `${responsesRemaining} of ${responseLimit} free responses remaining (${responsesUsed} used).`;
 }

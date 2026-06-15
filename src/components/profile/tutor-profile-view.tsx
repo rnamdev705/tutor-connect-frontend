@@ -38,6 +38,8 @@ import { PendingTutorDocumentRow } from "@/components/documents/pending-document
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { useTutorSubscription } from "@/lib/hooks/use-tutor-subscription";
+import { TutorProfileSubscriptionCard } from "@/components/profile/tutor-profile-subscription-card";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -49,6 +51,7 @@ import { toast } from "sonner";
 
 export function TutorProfileView() {
   const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
+  const { subscription } = useTutorSubscription();
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -144,6 +147,8 @@ export function TutorProfileView() {
           </div>
         </CardContent>
       </Card>
+
+      <TutorProfileSubscriptionCard subscription={subscription} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="shadow-sm">

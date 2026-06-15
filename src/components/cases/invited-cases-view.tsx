@@ -40,10 +40,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { invitationsListQueryOptions } from "@/lib/queries/list-queries";
 import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
-import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
-import { TutorResponseLimitBanner } from "@/components/subscription/tutor-response-limit-banner";
-import { SubscribeModal } from "@/components/modals/subscribe-modal";
-import { isResponseLimitReached } from "@/lib/tutor-subscription";
+import { useTutorSubscription } from "@/lib/hooks/use-tutor-subscription";
 import { textOverflow } from "@/lib/text-overflow";
 
 export function InvitedCasesView() {
@@ -54,16 +51,12 @@ export function InvitedCasesView() {
   const [invitationFilter, setInvitationFilter] = useState("all");
   const [declineTargetId, setDeclineTargetId] = useState<string | null>(null);
   const [acceptTargetId, setAcceptTargetId] = useState<string | null>(null);
-  const [subscribeOpen, setSubscribeOpen] = useState(false);
-  const { tutor } = useCurrentTutor();
-  const responseLimitReached = isResponseLimitReached(tutor);
+  const { subscription, isResponseLimitReached } = useTutorSubscription();
   const { search, setSearch, debouncedSearch, page, setPage } =
     useUrlSyncedSearch(urlSearch);
 
   const { accept, decline, isResponding, getResponseAction } =
-    useTutorInvitationResponse({
-      onResponseLimitReached: () => setSubscribeOpen(true),
-    });
+    useTutorInvitationResponse();
 
   const queryOptions = useMemo(
     () =>
@@ -130,13 +123,6 @@ export function InvitedCasesView() {
         description="Cases you've been invited to tutor"
         count={pagination.total}
       />
-
-      {tutor && (
-        <TutorResponseLimitBanner
-          tutor={tutor}
-          onSubscribe={() => setSubscribeOpen(true)}
-        />
-      )}
 
       <Card className="shadow-sm">
         <CardContent className="pt-6">
@@ -232,8 +218,8 @@ export function InvitedCasesView() {
                             getResponseAction={getResponseAction}
                             onAcceptRequest={setAcceptTargetId}
                             onDeclineRequest={setDeclineTargetId}
-                            responseLimitReached={responseLimitReached}
-                            onSubscribeRequest={() => setSubscribeOpen(true)}
+                            responseLimitReached={isResponseLimitReached}
+                            responsesRemaining={subscription.responsesRemaining}
                           />
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -309,11 +295,6 @@ export function InvitedCasesView() {
         }}
       />
 
-      <SubscribeModal
-        open={subscribeOpen}
-        onOpenChange={setSubscribeOpen}
-        responseLimit={tutor?.responseLimit}
-      />
     </div>
   );
 }

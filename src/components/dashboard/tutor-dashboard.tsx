@@ -16,13 +16,9 @@ import { DashboardContentSkeleton } from "@/components/common/content-skeletons"
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { getTutorsByIdDocumentsOptions } from "@/api/@tanstack/react-query.gen";
 import { invitationsCountQueryOptions } from "@/lib/queries/list-queries";
-import { TutorResponseLimitBanner } from "@/components/subscription/tutor-response-limit-banner";
-import { SubscribeModal } from "@/components/modals/subscribe-modal";
 import { textOverflow } from "@/lib/text-overflow";
-import { useState } from "react";
 
 export function TutorDashboard() {
-  const [subscribeOpen, setSubscribeOpen] = useState(false);
   const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
 
   const { data: totalInvites, isLoading: totalLoading } = useQuery({
@@ -86,11 +82,6 @@ export function TutorDashboard() {
         </p>
       </div>
 
-      <TutorResponseLimitBanner
-        tutor={tutor}
-        onSubscribe={() => setSubscribeOpen(true)}
-      />
-
       {statsLoading ? (
         <DashboardContentSkeleton />
       ) : (
@@ -114,21 +105,15 @@ export function TutorDashboard() {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/profile/edit">
+                <Link href="/profile">
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edit Profile
+                  My Profile
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </>
       )}
-
-      <SubscribeModal
-        open={subscribeOpen}
-        onOpenChange={setSubscribeOpen}
-        responseLimit={tutor.responseLimit}
-      />
     </div>
   );
 }

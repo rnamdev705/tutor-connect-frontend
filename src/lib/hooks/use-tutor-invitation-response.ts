@@ -53,6 +53,8 @@ export function useTutorInvitationResponse(
       });
       if (isResponseLimitError(error)) {
         options.onResponseLimitReached?.();
+        toast.error("Subscribe from your profile to respond to more invitations.");
+        return;
       }
       toast.error(getApiErrorMessage(error));
     },

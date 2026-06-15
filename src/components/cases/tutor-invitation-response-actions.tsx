@@ -8,6 +8,7 @@ import {
 } from "@/lib/case-invites";
 import { textOverflow } from "@/lib/text-overflow";
 import { cn } from "@/lib/utils";
+import { TutorSubscribeProfileLink } from "@/components/profile/tutor-profile-subscription-card";
 
 interface TutorInvitationResponseActionsProps {
   invitationId: string;
@@ -18,7 +19,7 @@ interface TutorInvitationResponseActionsProps {
   onAcceptRequest: (invitationId: string) => void;
   onDeclineRequest: (invitationId: string) => void;
   responseLimitReached?: boolean;
-  onSubscribeRequest?: () => void;
+  responsesRemaining?: number | null;
   size?: "sm" | "default";
 }
 
@@ -31,7 +32,7 @@ export function TutorInvitationResponseActions({
   onAcceptRequest,
   onDeclineRequest,
   responseLimitReached = false,
-  onSubscribeRequest,
+  responsesRemaining = null,
   size = "sm",
 }: TutorInvitationResponseActionsProps) {
   const canRespond = canRespondToInvitation(invitationStatus, caseStatus);
@@ -55,13 +56,9 @@ export function TutorInvitationResponseActions({
     return (
       <div className="flex max-w-xs flex-col items-end gap-2">
         <p className={cn(textOverflow.statusMessage, "text-right")}>
-          Free response limit reached. Subscribe to accept or decline.
+          Free response limit reached. Subscribe from your profile to accept or decline.
         </p>
-        {onSubscribeRequest && (
-          <Button size={size} onClick={onSubscribeRequest}>
-            Subscribe
-          </Button>
-        )}
+        <TutorSubscribeProfileLink />
       </div>
     );
   }
@@ -76,7 +73,15 @@ export function TutorInvitationResponseActions({
   }
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex flex-col items-end gap-2">
+      {responsesRemaining != null && responsesRemaining <= 1 && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {responsesRemaining === 0
+            ? "No free responses left"
+            : "1 free response left"}
+        </p>
+      )}
+      <div className="flex items-center justify-end gap-2">
       <Button
         size={size}
         variant="outline"
@@ -94,6 +99,7 @@ export function TutorInvitationResponseActions({
         <Check className="mr-1.5 h-3.5 w-3.5" />
         Accept
       </Button>
+      </div>
     </div>
   );
 }

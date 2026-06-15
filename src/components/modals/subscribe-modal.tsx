@@ -39,18 +39,17 @@ export function SubscribeModal({
             TutorConnect Pro
           </DialogTitle>
           <DialogDescription>
-            Demo subscription — no payment required. Unlock unlimited accept and decline
-            actions on case invitations.
+            Unlock unlimited accept and decline actions on case invitations.
           </DialogDescription>
         </DialogHeader>
 
         <div className="rounded-lg border bg-muted/40 p-4">
           <p className="text-2xl font-semibold">£9.99 / month</p>
-          <p className="mt-1 text-sm text-muted-foreground">Billed monthly (demo only)</p>
+          <p className="mt-1 text-sm text-muted-foreground">Billed monthly</p>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>Unlimited case responses</li>
             <li>Free plan includes {responseLimit} accept or decline actions</li>
-            <li>Cancel anytime — not really, this is a fake paywall</li>
+            <li>Cancel anytime from your profile</li>
           </ul>
         </div>
 
@@ -59,7 +58,7 @@ export function SubscribeModal({
             Not now
           </Button>
           <Button onClick={handleSubscribe} disabled={isSubscribing}>
-            {isSubscribing ? "Subscribing..." : "Subscribe (demo)"}
+            {isSubscribing ? "Subscribing..." : "Subscribe"}
           </Button>
         </DialogFooter>
       </DialogContent>

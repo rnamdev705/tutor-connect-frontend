@@ -39,3 +39,6 @@ export const ALLOWED_FILE_TYPES = [
 export const MAX_FILE_SIZE_MB = 10;
 
 export const APP_NAME = "TutorConnect";
+
+/** Must match API default `TUTOR_FREE_RESPONSE_LIMIT`. */
+export const TUTOR_FREE_RESPONSE_LIMIT = 3;
