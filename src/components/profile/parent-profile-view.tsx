@@ -23,6 +23,8 @@ import {
   casesCountQueryOptions,
   casesListQueryOptions,
 } from "@/lib/queries/list-queries";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 
 export function ParentProfileView() {
   const { user } = useAuth();
@@ -57,9 +59,9 @@ export function ParentProfileView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="min-w-0 flex-1">
+          <h1 className={textOverflow.pageTitle}>Profile</h1>
+          <p className={textOverflow.pageSubtitle}>
             Manage your account and tutoring activity
           </p>
         </div>
@@ -75,9 +77,9 @@ export function ParentProfileView() {
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <UserAvatar name={user.name} size="lg" />
-            <div>
-              <h2 className="text-lg font-semibold leading-tight">{user.name}</h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className={cn(textOverflow.cardName, "text-lg")}>{user.name}</h2>
+              <p className={cn(textOverflow.pageSubtitle, "mt-0 truncate")}>{user.email}</p>
               <Badge variant="secondary" className="mt-2 capitalize">
                 {user.role}
               </Badge>

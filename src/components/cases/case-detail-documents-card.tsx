@@ -25,6 +25,7 @@ import { PendingCaseDocumentRow } from "@/components/documents/pending-document-
 import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
+import { textOverflow } from "@/lib/text-overflow";
 import type { Document } from "@/api/types.gen";
 import type { PendingDocumentUpload } from "@/lib/hooks/use-pending-document-uploads";
 
@@ -137,7 +138,7 @@ export function CaseDetailDocumentsCard({
                       key={d.id}
                       className={deleting ? "bg-muted/40 opacity-60" : undefined}
                     >
-                      <TableCell className="max-w-[200px] truncate font-medium">
+                      <TableCell className={textOverflow.fileName}>
                         {d.originalName}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
@@ -146,7 +147,7 @@ export function CaseDetailDocumentsCard({
                       <TableCell className="text-muted-foreground">
                         {formatFileSize(d.sizeBytes)}
                       </TableCell>
-                      <TableCell className="max-w-[120px] truncate text-muted-foreground">
+                      <TableCell className={textOverflow.tableMeta}>
                         {d.uploadedByName}
                       </TableCell>
                       <TableCell className="text-muted-foreground">

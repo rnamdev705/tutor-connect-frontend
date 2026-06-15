@@ -24,6 +24,8 @@ import {
 } from "@/lib/format";
 import { tutorsSearchQueryOptions } from "@/lib/queries/list-queries";
 import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 import type { TutorProfileSummary } from "@/api/types.gen";
 import type { AppStatus } from "@/components/common/status-badge";
 
@@ -145,11 +147,11 @@ export function InviteTutorModal({
                 >
                   <UserAvatar name={tutor.displayName} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{tutor.displayName}</p>
+                    <p className={cn(textOverflow.cardName, "text-sm")}>{tutor.displayName}</p>
                     <p className="truncate text-xs text-muted-foreground">
                       {getQualificationSummary(tutor)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="line-clamp-1 break-words text-xs text-muted-foreground">
                       {getExperienceSummary(tutor)}
                     </p>
                   </div>

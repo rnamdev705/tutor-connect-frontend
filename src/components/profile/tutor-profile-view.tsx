@@ -43,6 +43,8 @@ import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-dele
 import { getApiErrorMessage } from "@/lib/api-error";
 import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatDate, formatFileSize } from "@/lib/format";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function TutorProfileView() {
@@ -134,9 +136,9 @@ export function TutorProfileView() {
       <Card className="shadow-sm" size="sm">
         <CardContent className="flex items-center gap-4">
           <UserAvatar name={tutor.displayName} size="lg" />
-          <div>
-            <h2 className="text-lg font-semibold">{tutor.displayName}</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            <h2 className={cn(textOverflow.cardName, "text-lg")}>{tutor.displayName}</h2>
+            <p className={textOverflow.pageSubtitle}>
               {tutor.yearsOfExperience} years experience · Tutor
             </p>
           </div>
@@ -151,7 +153,7 @@ export function TutorProfileView() {
           <CardContent>
             <ul className="space-y-2">
               {tutor.qualifications.map((q) => (
-                <li key={q} className="text-sm">{q}</li>
+                <li key={q} className={textOverflow.listItem}>{q}</li>
               ))}
             </ul>
           </CardContent>
@@ -168,9 +170,9 @@ export function TutorProfileView() {
             </p>
             <div>
               <p className="mb-2 text-sm text-muted-foreground">Subjects:</p>
-              <p className="text-sm">{tutor.subjectsTaught.join(", ")}</p>
+              <p className={textOverflow.listItem}>{tutor.subjectsTaught.join(", ")}</p>
             </div>
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className={textOverflow.prose}>
               {tutor.teachingBackground}
             </p>
           </CardContent>
@@ -229,7 +231,7 @@ export function TutorProfileView() {
                         key={d.id}
                         className={deleting ? "bg-muted/40 opacity-60" : undefined}
                       >
-                        <TableCell className="max-w-[240px] truncate font-medium">
+                        <TableCell className={textOverflow.fileName}>
                         {d.originalName}
                       </TableCell>
                         <TableCell className="text-muted-foreground">

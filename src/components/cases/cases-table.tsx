@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/common/status-badge";
 import { formatDate } from "@/lib/format";
+import { textOverflow } from "@/lib/text-overflow";
 import type { Case } from "@/api/types.gen";
 
 interface CasesTableProps {
@@ -37,8 +38,8 @@ export function CasesTable({ cases, showUpdated = false }: CasesTableProps) {
       <TableBody>
         {cases.map((c) => (
           <TableRow key={c.id}>
-            <TableCell className="font-medium">{c.title}</TableCell>
-            <TableCell className="text-muted-foreground">{c.subject}</TableCell>
+            <TableCell className={textOverflow.tableTitle}>{c.title}</TableCell>
+            <TableCell className={textOverflow.tableMuted}>{c.subject}</TableCell>
             <TableCell>
               <StatusBadge status={c.status} />
             </TableCell>

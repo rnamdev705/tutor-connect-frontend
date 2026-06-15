@@ -6,6 +6,8 @@ import {
   canRespondToInvitation,
   invitationResponseBlockedReason,
 } from "@/lib/case-invites";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 
 interface TutorInvitationResponseActionsProps {
   invitationId: string;
@@ -41,7 +43,7 @@ export function TutorInvitationResponseActions({
 
   if (blockedReason) {
     return (
-      <p className="max-w-xs text-right text-xs text-muted-foreground">{blockedReason}</p>
+      <p className={cn(textOverflow.statusMessage, "max-w-xs text-right")}>{blockedReason}</p>
     );
   }
 

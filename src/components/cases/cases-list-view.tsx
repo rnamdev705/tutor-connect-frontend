@@ -47,6 +47,7 @@ import { invalidateCaseData } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import { canDeleteCase, isCaseEditLocked } from "@/lib/case-invites";
 import type { Case } from "@/api/types.gen";
+import { textOverflow } from "@/lib/text-overflow";
 import { toast } from "sonner";
 
 function CaseTableRow({
@@ -62,9 +63,9 @@ function CaseTableRow({
 }) {
   return (
     <TableRow className={isDeleting ? "bg-muted/40" : undefined}>
-      <TableCell className="font-medium">{caseItem.title}</TableCell>
-      <TableCell className="text-muted-foreground">{caseItem.subject}</TableCell>
-      <TableCell className="text-muted-foreground">{caseItem.level}</TableCell>
+      <TableCell className={textOverflow.tableTitle}>{caseItem.title}</TableCell>
+      <TableCell className={textOverflow.tableMuted}>{caseItem.subject}</TableCell>
+      <TableCell className={textOverflow.tableMuted}>{caseItem.level}</TableCell>
       <TableCell>{formatCurrency(caseItem.budgetPerHour)}/hr</TableCell>
       <TableCell>
         {isDeleting ? <LoadingStatusCell label="Deleting..." /> : <StatusBadge status={caseItem.status} />}

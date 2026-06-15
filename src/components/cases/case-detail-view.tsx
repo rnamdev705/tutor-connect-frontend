@@ -28,6 +28,7 @@ import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateCaseData } from "@/lib/queries/invalidate";
+import { toast } from "sonner";
 import { canDeleteCase, canInviteTutorsToCase, isCaseEditLocked, matchedCaseHint } from "@/lib/case-invites";
 import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
@@ -39,7 +40,7 @@ import { ConfirmActionModal } from "@/components/modals/confirm-action-modal";
 import { InvitationStatusCell } from "@/components/cases/invitation-status-cell";
 import { TutorInvitationResponseActions } from "@/components/cases/tutor-invitation-response-actions";
 import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
-import { toast } from "sonner";
+import { textOverflow } from "@/lib/text-overflow";
 
 interface CaseDetailViewProps {
   caseId: string;
@@ -172,12 +173,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         className={`space-y-6 ${caseIsDeleting ? "pointer-events-none select-none opacity-60" : ""}`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{caseData.title}</h1>
-              <StatusBadge status={caseData.status} />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-3">
+              <h1 className={textOverflow.pageTitle}>{caseData.title}</h1>
+              <StatusBadge status={caseData.status} className="shrink-0" />
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className={textOverflow.pageSubtitle}>
               {caseData.subject} · {caseData.level}
             </p>
           </div>
@@ -255,9 +256,9 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                   ["Created", formatDate(caseData.createdAt)],
                   ["Updated", formatDate(caseData.updatedAt)],
                 ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                    <dd className="mt-1 text-sm font-medium">{value}</dd>
+                  <div key={label} className="min-w-0">
+                    <dt className={textOverflow.detailLabel}>{label}</dt>
+                    <dd className={textOverflow.detailValue}>{value}</dd>
                   </div>
                 ))}
               </dl>

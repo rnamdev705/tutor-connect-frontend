@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_MB } from "@/lib/constants";
+import { textOverflow } from "@/lib/text-overflow";
 
 interface UploadDocumentModalProps {
   open: boolean;
@@ -101,10 +102,10 @@ export function UploadDocumentModal({
           }`}
         >
           {file ? (
-            <div className="flex items-center gap-3">
-              <File className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">{file.name}</p>
+            <div className="flex w-full min-w-0 items-center gap-3">
+              <File className="h-8 w-8 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className={textOverflow.fileName}>{file.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {(file.size / 1024).toFixed(1)} KB
                 </p>

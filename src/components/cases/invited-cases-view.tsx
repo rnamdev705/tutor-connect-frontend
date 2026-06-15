@@ -40,6 +40,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { invitationsListQueryOptions } from "@/lib/queries/list-queries";
 import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
+import { textOverflow } from "@/lib/text-overflow";
 
 export function InvitedCasesView() {
   const { user } = useAuth();
@@ -179,9 +180,9 @@ export function InvitedCasesView() {
                       key={invitation.id}
                       className={responding ? "bg-muted/40" : undefined}
                     >
-                      <TableCell className="font-medium">{c.title}</TableCell>
-                      <TableCell className="text-muted-foreground">{c.subject}</TableCell>
-                      <TableCell className="text-muted-foreground">{c.level}</TableCell>
+                      <TableCell className={textOverflow.tableTitle}>{c.title}</TableCell>
+                      <TableCell className={textOverflow.tableMuted}>{c.subject}</TableCell>
+                      <TableCell className={textOverflow.tableMuted}>{c.level}</TableCell>
                       <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
                       <TableCell>
                         {accepting ? (

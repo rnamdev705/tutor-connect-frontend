@@ -15,9 +15,8 @@ import { ErrorState } from "@/components/common/error-state";
 import { DashboardContentSkeleton } from "@/components/common/content-skeletons";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { getTutorsByIdDocumentsOptions } from "@/api/@tanstack/react-query.gen";
-import {
-  invitationsCountQueryOptions,
-} from "@/lib/queries/list-queries";
+import { invitationsCountQueryOptions } from "@/lib/queries/list-queries";
+import { textOverflow } from "@/lib/text-overflow";
 
 export function TutorDashboard() {
   const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
@@ -74,11 +73,11 @@ export function TutorDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="min-w-0">
+        <h1 className={textOverflow.pageTitle}>
           Welcome back, {tutor.displayName.split(" ")[0]}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className={textOverflow.pageSubtitle}>
           Review your invitations and manage your tutor profile.
         </p>
       </div>

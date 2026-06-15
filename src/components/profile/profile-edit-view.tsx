@@ -33,6 +33,7 @@ import {
   isTutorProfileComplete,
 } from "@/lib/tutor-profile-completion";
 import { toast } from "sonner";
+import { textOverflow } from "@/lib/text-overflow";
 
 export function ProfileEditView() {
   const { user } = useAuth();
@@ -174,11 +175,11 @@ export function ProfileEditView() {
   if (isTutor && isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+        <div className="min-w-0">
+          <h1 className={textOverflow.pageTitle}>
             {mustCompleteProfile ? "Complete Your Profile" : "Edit Profile"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className={textOverflow.pageSubtitle}>
             Update your account information
           </p>
         </div>
@@ -189,8 +190,8 @@ export function ProfileEditView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           {!mustCompleteProfile && (
             formDisabled ? (
               <Button variant="ghost" size="icon" disabled>
@@ -204,11 +205,11 @@ export function ProfileEditView() {
               </Button>
             )
           )}
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+          <div className="min-w-0">
+            <h1 className={textOverflow.pageTitle}>
               {mustCompleteProfile ? "Complete Your Profile" : "Edit Profile"}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className={textOverflow.pageSubtitle}>
               {mustCompleteProfile
                 ? "Fill in every field below to access the tutor portal."
                 : "Update your account information"}
@@ -227,7 +228,7 @@ export function ProfileEditView() {
         <Card className="border-amber-200 bg-amber-50 shadow-sm dark:border-amber-900 dark:bg-amber-950/30">
           <CardContent className="pt-6">
             <p className="text-sm font-medium">Required before you can continue</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 break-words text-sm text-muted-foreground">
               Complete: {missingFields.join(", ")}
             </p>
           </CardContent>

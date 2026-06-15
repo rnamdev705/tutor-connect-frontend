@@ -20,6 +20,7 @@ import {
   casesCountQueryOptions,
   casesListQueryOptions,
 } from "@/lib/queries/list-queries";
+import { textOverflow } from "@/lib/text-overflow";
 
 export function ParentDashboard() {
   const { user } = useAuth();
@@ -48,11 +49,11 @@ export function ParentDashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+        <div className="min-w-0 flex-1">
+          <h1 className={textOverflow.pageTitle}>
             Welcome back, {user.name.split(" ")[0]}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className={textOverflow.pageSubtitle}>
             Manage your tutoring cases and find the right tutors.
           </p>
         </div>

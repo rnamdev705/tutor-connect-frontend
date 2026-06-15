@@ -37,8 +37,10 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
-import { formatDate } from "@/lib/format";
 import { canInviteTutorsToCase, canRevokeInvitation } from "@/lib/case-invites";
+import { formatDate } from "@/lib/format";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
@@ -175,9 +177,9 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Invited Tutors</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            <h1 className={textOverflow.pageTitle}>Invited Tutors</h1>
+            <p className={cn(textOverflow.pageSubtitle, "truncate")}>
               {caseData.title} · {totalCount} tutor(s) invited
             </p>
           </div>

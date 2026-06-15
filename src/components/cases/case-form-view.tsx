@@ -41,6 +41,7 @@ import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
 import { isCaseEditLocked } from "@/lib/case-invites";
+import { textOverflow } from "@/lib/text-overflow";
 import type { Case } from "@/api/types.gen";
 
 type CaseStatus = Case["status"];
@@ -265,11 +266,11 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
             </Link>
           </Button>
         )}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+        <div className="min-w-0 flex-1">
+          <h1 className={textOverflow.pageTitle}>
             {mode === "create" ? "Create Case" : "Edit Case"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className={textOverflow.pageSubtitle}>
             {mode === "create"
               ? "Post a new tutoring case for tutors to respond to."
               : isClosedCase

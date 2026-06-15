@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { textOverflow } from "@/lib/text-overflow";
 
 interface PageHeaderProps {
   title: string;
@@ -22,19 +23,17 @@ export function PageHeader({
         className,
       )}
     >
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {title}
-          </h1>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 className={cn(textOverflow.pageTitle, "text-foreground")}>{title}</h1>
           {count !== undefined && (
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               {count}
             </span>
           )}
         </div>
         {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <p className={textOverflow.pageSubtitle}>{description}</p>
         )}
       </div>
       {children && <div className="flex shrink-0 items-center gap-2">{children}</div>}

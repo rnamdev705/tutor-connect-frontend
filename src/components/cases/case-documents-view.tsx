@@ -53,6 +53,8 @@ import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface CaseDocumentsViewProps {
@@ -259,9 +261,9 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            <h1 className={textOverflow.pageTitle}>Documents</h1>
+            <p className={cn(textOverflow.pageSubtitle, "truncate")}>
               {caseData.title} · {allRows.length} file(s)
             </p>
           </div>
@@ -363,7 +365,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                           key={row.id}
                           className={deleting ? "bg-muted/40 opacity-60" : undefined}
                         >
-                          <TableCell className="max-w-[240px] truncate font-medium">
+                          <TableCell className={textOverflow.fileName}>
                             {row.fileName}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-xs">
@@ -372,7 +374,7 @@ export function CaseDocumentsView({ caseId }: CaseDocumentsViewProps) {
                           <TableCell className="text-muted-foreground">
                             {formatFileSize(row.sizeBytes)}
                           </TableCell>
-                          <TableCell className="max-w-[140px] truncate text-muted-foreground">
+                          <TableCell className={textOverflow.tableMeta}>
                             {row.uploadedByName}
                           </TableCell>
                           <TableCell className="text-muted-foreground">

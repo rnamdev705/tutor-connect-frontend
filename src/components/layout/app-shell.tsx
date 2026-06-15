@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       >
         <AppTopNav />
-        <main className="flex-1 p-6">
+        <main className="min-w-0 flex-1 p-6">
           <TutorProfileGate>{children}</TutorProfileGate>
         </main>
       </div>

@@ -21,6 +21,7 @@ import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import { formatCurrency } from "@/lib/format";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
 import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
+import { cn } from "@/lib/utils";
 import type { Case } from "@/api/types.gen";
 
 interface InviteToCaseModalProps {
@@ -82,8 +83,9 @@ export function InviteToCaseModal({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Invite to Case</DialogTitle>
-          <DialogDescription>
-            Select an open case to invite {tutorName} to.
+          <DialogDescription className="break-words">
+            Select an open case to invite{" "}
+            <span className="font-medium text-foreground">{tutorName}</span> to.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,11 +135,13 @@ export function InviteToCaseModal({
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{caseItem.title}</p>
-                          <StatusBadge status={caseItem.status} />
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className={cn("min-w-0 flex-1 truncate text-sm font-medium")}>
+                            {caseItem.title}
+                          </p>
+                          <StatusBadge status={caseItem.status} className="shrink-0" />
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">
                           {caseItem.subject} · {caseItem.level} · {caseItem.location}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">

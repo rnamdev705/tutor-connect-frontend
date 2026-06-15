@@ -36,6 +36,8 @@ import { getApiErrorMessage, isApiForbiddenError } from "@/lib/api-error";
 import { usePendingCaseInvites } from "@/lib/hooks/use-pending-invites";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
+import { textOverflow } from "@/lib/text-overflow";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface TutorProfileDetailViewProps {
@@ -107,13 +109,11 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-5">
-        <UserAvatar name={tutor.displayName} size="xl" />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {tutor.displayName}
-          </h1>
-          <Badge variant="secondary" className="mt-2">
+      <div className="flex min-w-0 items-start gap-5">
+        <UserAvatar name={tutor.displayName} size="xl" className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <h1 className={textOverflow.pageTitle}>{tutor.displayName}</h1>
+          <Badge variant="secondary" className="mt-2 shrink-0">
             {tutor.yearsOfExperience} years experience
           </Badge>
         </div>
@@ -132,7 +132,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                 </h4>
                 <ul className="mt-2 space-y-1">
                   {tutor.qualifications.map((q) => (
-                    <li key={q} className="text-sm">{q}</li>
+                    <li key={q} className={textOverflow.listItem}>{q}</li>
                   ))}
                 </ul>
               </div>
@@ -140,7 +140,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                 <h4 className="text-sm font-medium text-muted-foreground">
                   Teaching Background
                 </h4>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                <p className={textOverflow.prose}>
                   {tutor.teachingBackground}
                 </p>
               </div>
@@ -209,7 +209,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
                     <TableBody>
                       {documents.map((d) => (
                         <TableRow key={d.id}>
-                          <TableCell className="font-medium">{d.originalName}</TableCell>
+                          <TableCell className={textOverflow.fileName}>{d.originalName}</TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatFileSize(d.sizeBytes)}
                           </TableCell>

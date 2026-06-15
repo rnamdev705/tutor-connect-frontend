@@ -7,6 +7,7 @@ import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { isTutorProfileComplete } from "@/lib/tutor-profile-completion";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { textOverflow } from "@/lib/text-overflow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,20 +45,18 @@ export function AppTopNav() {
             className="flex items-center gap-3 rounded-lg px-2 py-1.5 outline-none transition-colors hover:bg-muted"
           >
             <UserAvatar name={user.name} size="md" />
-            <div className="hidden text-left md:block">
-              <p className="text-sm font-medium leading-none">{user.name}</p>
+            <div className="hidden min-w-0 max-w-[12rem] text-left md:block">
+              <p className={textOverflow.navName}>{user.name}</p>
               <Badge variant="secondary" className="mt-1 text-[10px] font-normal">
                 {roleLabel}
               </Badge>
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-1">
-                <span>{user.name}</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {user.email}
-                </span>
+            <DropdownMenuLabel className="min-w-0">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="truncate">{user.name}</span>
+                <span className={textOverflow.navEmail}>{user.email}</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
