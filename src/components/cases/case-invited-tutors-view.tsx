@@ -38,6 +38,7 @@ import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/format";
+import { canInviteTutorsToCase, canRevokeInvitation } from "@/lib/case-invites";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
@@ -163,6 +164,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
 
   const inviteInProgress = activePendingInvites.length > 0;
   const totalCount = caseData.invitations.length + activePendingInvites.length;
+  const canInvite = canInviteTutorsToCase(caseData.status);
 
   return (
     <div className="space-y-6">
@@ -180,13 +182,15 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
             </p>
           </div>
         </div>
-        <Button
-          disabled={inviteInProgress || hasPendingRevokes}
-          onClick={() => setInviteOpen(true)}
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Tutor
-        </Button>
+        {canInvite && (
+          <Button
+            disabled={inviteInProgress || hasPendingRevokes}
+            onClick={() => setInviteOpen(true)}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite Tutor
+          </Button>
+        )}
       </div>
 
       <Card className="shadow-sm">
@@ -280,7 +284,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                                 View Profile
                               </DropdownMenuItem>
                             )}
-                            {row.status !== "accepted" && (
+                            {canRevokeInvitation(row.status) && row.tutorUserId && (
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() =>
@@ -318,28 +322,30 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
         </CardContent>
       </Card>
 
-      <InviteTutorModal
-        open={inviteOpen}
-        onOpenChange={(open) => {
-          if (open && (inviteInProgress || hasPendingRevokes)) return;
-          setInviteOpen(open);
-        }}
-        invitedTutors={caseData.invitations
-          .filter((inv) => inv.tutorProfileId)
-          .map((inv) => ({
-            tutorProfileId: inv.tutorProfileId!,
-            status: inv.status,
-          }))}
-        invitingTutorIds={pendingInvites.map((invite) => invite.tutorProfileId)}
-        onInvite={(tutor) =>
-          trackInvite(tutor.id, tutor.displayName, () =>
-            inviteMutation.mutateAsync({
-              path: { id: caseId },
-              body: { tutorProfileId: tutor.id },
-            }),
-          )
-        }
-      />
+      {canInvite && (
+        <InviteTutorModal
+          open={inviteOpen}
+          onOpenChange={(open) => {
+            if (open && (inviteInProgress || hasPendingRevokes)) return;
+            setInviteOpen(open);
+          }}
+          invitedTutors={caseData.invitations
+            .filter((inv) => inv.tutorProfileId)
+            .map((inv) => ({
+              tutorProfileId: inv.tutorProfileId!,
+              status: inv.status,
+            }))}
+          invitingTutorIds={pendingInvites.map((invite) => invite.tutorProfileId)}
+          onInvite={(tutor) =>
+            trackInvite(tutor.id, tutor.displayName, () =>
+              inviteMutation.mutateAsync({
+                path: { id: caseId },
+                body: { tutorProfileId: tutor.id },
+              }),
+            )
+          }
+        />
+      )}
     </div>
   );
 }

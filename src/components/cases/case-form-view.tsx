@@ -39,6 +39,7 @@ import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-upl
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
+import { isCaseEditLocked } from "@/lib/case-invites";
 import type { Case } from "@/api/types.gen";
 
 type CaseStatus = Case["status"];
@@ -234,7 +235,9 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   const isSaving =
     mode === "create" ? createMutation.isPending : updateMutation.isPending;
 
-  const formDisabled = isSaving;
+  const isClosedCase =
+    mode === "edit" && existingCase && isCaseEditLocked(existingCase.status);
+  const formDisabled = isSaving || !!isClosedCase;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -257,7 +260,9 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
           <p className="text-sm text-muted-foreground">
             {mode === "create"
               ? "Post a new tutoring case for tutors to respond to."
-              : "Update your case details."}
+              : isClosedCase
+                ? "This case is closed and can no longer be edited."
+                : "Update your case details."}
           </p>
         </div>
       </div>
@@ -359,28 +364,45 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
             )}
           </div>
 
-          {mode === "edit" && (
+          {mode === "edit" && existingCase && (
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select
-                value={form.status}
-                disabled={formDisabled}
-                onValueChange={(v) =>
-                  v && setForm({ ...form, status: v as CaseStatus })
-                }
-              >
-                <SelectTrigger disabled={formDisabled}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Matched status is set automatically when a tutor accepts an invitation.
-              </p>
+              {isClosedCase ? (
+                <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                  Closed — this case cannot be reopened
+                </div>
+              ) : (
+                <>
+                  <Select
+                    value={form.status}
+                    disabled={formDisabled}
+                    onValueChange={(v) =>
+                      v && setForm({ ...form, status: v as CaseStatus })
+                    }
+                  >
+                    <SelectTrigger disabled={formDisabled}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingCase.status === "open" && (
+                        <SelectItem value="open">Open</SelectItem>
+                      )}
+                      {existingCase.status === "matched" && (
+                        <SelectItem value="matched" disabled>
+                          Matched
+                        </SelectItem>
+                      )}
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {existingCase.status === "matched"
+                      ? "Matched cases can only be closed. Matched status is set when a tutor accepts."
+                      : "Matched status is set automatically when a tutor accepts an invitation."}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </CardContent>
@@ -477,7 +499,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
             </Link>
           </Button>
         )}
-        <Button onClick={handleSave} disabled={isSaving}>
+        <Button onClick={handleSave} disabled={formDisabled}>
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -20,6 +20,7 @@ import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import { formatCurrency } from "@/lib/format";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
+import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
 import type { Case } from "@/api/types.gen";
 
 interface InviteToCaseModalProps {
@@ -57,9 +58,9 @@ export function InviteToCaseModal({
   const handleConfirm = () => {
     if (!selected) return;
 
-    const isInvited = !!selected.tutorInvitation;
+    const invitationStatus = selected.tutorInvitation?.status;
     const isInviting = invitingCaseIds.includes(selected.id);
-    if (isInvited || isInviting) return;
+    if (blocksNewInviteForInvitationStatus(invitationStatus) || isInviting) return;
 
     onInvite?.(selected);
     setSelected(null);
@@ -110,9 +111,9 @@ export function InviteToCaseModal({
               <Else>
                 {cases.map((caseItem) => {
                   const invitationStatus = caseItem.tutorInvitation?.status;
-                  const isInvited = !!caseItem.tutorInvitation;
                   const isInviting = invitingCaseIds.includes(caseItem.id);
-                  const isDisabled = isInvited || isInviting;
+                  const isDisabled =
+                    blocksNewInviteForInvitationStatus(invitationStatus) || isInviting;
                   const isSelected = selected?.id === caseItem.id && !isDisabled;
 
                   return (
@@ -164,7 +165,7 @@ export function InviteToCaseModal({
             onClick={handleConfirm}
             disabled={
               !selected ||
-              !!selected.tutorInvitation ||
+              blocksNewInviteForInvitationStatus(selected.tutorInvitation?.status) ||
               invitingCaseIds.includes(selected.id)
             }
           >

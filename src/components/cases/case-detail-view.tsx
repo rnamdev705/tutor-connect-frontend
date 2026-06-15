@@ -28,6 +28,7 @@ import { evictDocumentBlobCache } from "@/lib/document-file";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateCaseData } from "@/lib/queries/invalidate";
+import { canInviteTutorsToCase, isCaseEditLocked } from "@/lib/case-invites";
 import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";
 import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-deletes";
@@ -147,6 +148,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   );
   const inviteInProgress = activePendingInvites.length > 0;
   const caseIsDeleting = isDeletingCase(caseId);
+  const canInvite = canInviteTutorsToCase(caseData.status);
 
   return (
     <div className="relative space-y-6">
@@ -164,7 +166,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
               {caseData.subject} · {caseData.level}
             </p>
           </div>
-          {canManage && !caseIsDeleting && (
+          {canManage && !caseIsDeleting && !isCaseEditLocked(caseData.status) && (
             <div className="flex gap-2">
               <Button variant="outline" asChild>
                 <Link href={`/cases/${caseData.id}/edit`}>
@@ -247,7 +249,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
         </div>
       </div>
 
-      {canManage && (
+      {canManage && canInvite && (
         <InviteTutorModal
           open={inviteOpen}
           onOpenChange={(open) => {

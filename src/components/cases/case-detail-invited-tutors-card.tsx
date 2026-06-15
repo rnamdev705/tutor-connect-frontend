@@ -22,6 +22,11 @@ import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { formatDate } from "@/lib/format";
+import {
+  canInviteTutorsToCase,
+  canRevokeInvitation,
+  inviteClosedMessage,
+} from "@/lib/case-invites";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
 import type { CaseDetail } from "@/api/types.gen";
 import type { PendingTutorInvite } from "@/lib/hooks/use-pending-invites";
@@ -61,6 +66,8 @@ export function CaseDetailInvitedTutorsCard({
   ];
   const tutorTotalCount = allTutorRows.length;
   const previewTutorRows = allTutorRows.slice(0, PREVIEW_LIMIT);
+  const canInvite = canInviteTutorsToCase(caseData.status);
+  const inviteClosedHint = inviteClosedMessage(caseData.status);
 
   return (
     <Card className="shadow-sm">
@@ -68,18 +75,21 @@ export function CaseDetailInvitedTutorsCard({
         <div className="min-w-0">
           <CardTitle className="text-base">Invited Tutors</CardTitle>
           <CardDescription>
-            {caseData.invitations.length + activePendingInvites.length} tutor(s) invited
+            {inviteClosedHint ??
+              `${caseData.invitations.length + activePendingInvites.length} tutor(s) invited`}
           </CardDescription>
         </div>
-        <Button
-          size="sm"
-          className="shrink-0"
-          disabled={inviteInProgress || hasPendingRevokes || caseIsDeleting}
-          onClick={onInviteOpen}
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Tutor
-        </Button>
+        {canInvite && (
+          <Button
+            size="sm"
+            className="shrink-0"
+            disabled={inviteInProgress || hasPendingRevokes || caseIsDeleting}
+            onClick={onInviteOpen}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite Tutor
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {tutorTotalCount === 0 ? (
@@ -152,7 +162,7 @@ export function CaseDetailInvitedTutorsCard({
                             View Profile
                           </DropdownMenuItem>
                         )}
-                        {inv.status !== "accepted" && (
+                        {canRevokeInvitation(inv.status) && (
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => onRemoveInvitation(inv.tutorUserId, tutorName)}

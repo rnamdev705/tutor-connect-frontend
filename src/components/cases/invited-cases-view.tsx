@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, Loader2, Mail, MoreHorizontal } from "lucide-react";
+import { Check, Eye, Loader2, Mail, MoreHorizontal, X } from "lucide-react";
 import { patchInvitationsByIdMutation } from "@/api/@tanstack/react-query.gen";
 import type { GetInvitationsResponse } from "@/api/types.gen";
 import {
@@ -44,6 +44,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { invitationsListQueryOptions } from "@/lib/queries/list-queries";
+import { canRespondToInvitation } from "@/lib/case-invites";
 import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
 import { toast } from "sonner";
 
@@ -84,7 +85,7 @@ export function InvitedCasesView() {
   const { trackResponse, isResponding, getResponseAction } =
     usePendingInvitationResponses();
 
-  const acceptMutation = useMutation({
+  const responseMutation = useMutation({
     ...patchInvitationsByIdMutation(),
     onMutate: async () => {
       await queryClient.cancelQueries({
@@ -98,7 +99,11 @@ export function InvitedCasesView() {
     onSuccess: (updated) => {
       setInvitationInListCache(queryClient, updated);
       void invalidateCaseData(queryClient, updated.caseId);
-      toast.success("Case invitation accepted");
+      toast.success(
+        updated.status === "accepted"
+          ? "Case invitation accepted"
+          : "Case invitation declined",
+      );
     },
     onError: (error, _variables, context) => {
       context?.previous.forEach(([key, value]) => {
@@ -117,9 +122,18 @@ export function InvitedCasesView() {
 
   const handleAccept = (invitationId: string) => {
     trackResponse(invitationId, "accept", () =>
-      acceptMutation.mutateAsync({
+      responseMutation.mutateAsync({
         path: { id: invitationId },
         body: { status: "accepted" },
+      }),
+    );
+  };
+
+  const handleDecline = (invitationId: string) => {
+    trackResponse(invitationId, "decline", () =>
+      responseMutation.mutateAsync({
+        path: { id: invitationId },
+        body: { status: "declined" },
       }),
     );
   };
@@ -204,14 +218,16 @@ export function InvitedCasesView() {
               </TableHeader>
               <TableBody>
                 {rows.map(({ case: c, invitation }) => {
-                  const accepting =
-                    isResponding(invitation.id) &&
-                    getResponseAction(invitation.id) === "accept";
+                  const responding = isResponding(invitation.id);
+                  const responseAction = getResponseAction(invitation.id);
+                  const accepting = responding && responseAction === "accept";
+                  const declining = responding && responseAction === "decline";
+                  const canRespond = canRespondToInvitation(invitation.status);
 
                   return (
                     <TableRow
                       key={invitation.id}
-                      className={accepting ? "bg-muted/40" : undefined}
+                      className={responding ? "bg-muted/40" : undefined}
                     >
                       <TableCell className="font-medium">{c.title}</TableCell>
                       <TableCell className="text-muted-foreground">{c.subject}</TableCell>
@@ -233,6 +249,11 @@ export function InvitedCasesView() {
                             label="Accepting..."
                             className="font-medium text-emerald-700"
                           />
+                        ) : declining ? (
+                          <LoadingStatusCell
+                            label="Declining..."
+                            className="font-medium text-muted-foreground"
+                          />
                         ) : (
                           <StatusBadge status={invitation.status} />
                         )}
@@ -242,21 +263,30 @@ export function InvitedCasesView() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {invitation.status === "pending" &&
-                            (accepting ? (
+                          {canRespond &&
+                            (responding ? (
                               <Button size="sm" disabled>
                                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                Accepting...
+                                {accepting ? "Accepting..." : "Declining..."}
                               </Button>
                             ) : (
-                              <Button
-                                size="sm"
-                                disabled={isResponding(invitation.id)}
-                                onClick={() => handleAccept(invitation.id)}
-                              >
-                                <Check className="mr-1.5 h-3.5 w-3.5" />
-                                Accept
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDecline(invitation.id)}
+                                >
+                                  <X className="mr-1.5 h-3.5 w-3.5" />
+                                  Decline
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAccept(invitation.id)}
+                                >
+                                  <Check className="mr-1.5 h-3.5 w-3.5" />
+                                  Accept
+                                </Button>
+                              </>
                             ))}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -264,7 +294,7 @@ export function InvitedCasesView() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                disabled={accepting}
+                                disabled={responding}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>

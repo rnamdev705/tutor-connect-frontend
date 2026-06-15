@@ -23,6 +23,7 @@ import {
   getQualificationSummary,
 } from "@/lib/format";
 import { tutorsSearchQueryOptions } from "@/lib/queries/list-queries";
+import { blocksNewInviteForInvitationStatus } from "@/lib/case-invites";
 import type { TutorProfileSummary } from "@/api/types.gen";
 import type { AppStatus } from "@/components/common/status-badge";
 
@@ -66,7 +67,12 @@ export function InviteTutorModal({
 
   const handleConfirm = () => {
     if (!selected) return;
-    if (invitedByTutorId.has(selected.id) || invitingTutorIds.includes(selected.id)) {
+
+    const invitationStatus = invitedByTutorId.get(selected.id);
+    if (
+      blocksNewInviteForInvitationStatus(invitationStatus) ||
+      invitingTutorIds.includes(selected.id)
+    ) {
       return;
     }
 
@@ -117,7 +123,8 @@ export function InviteTutorModal({
             tutors.map((tutor) => {
               const invitationStatus = invitedByTutorId.get(tutor.id);
               const isInviting = invitingTutorIds.includes(tutor.id);
-              const isDisabled = !!invitationStatus || isInviting;
+              const isDisabled =
+                blocksNewInviteForInvitationStatus(invitationStatus) || isInviting;
               const isSelected = selected?.id === tutor.id && !isDisabled;
 
               return (
@@ -165,7 +172,7 @@ export function InviteTutorModal({
             onClick={handleConfirm}
             disabled={
               !selected ||
-              invitedByTutorId.has(selected.id) ||
+              blocksNewInviteForInvitationStatus(invitedByTutorId.get(selected.id)) ||
               invitingTutorIds.includes(selected.id)
             }
           >
