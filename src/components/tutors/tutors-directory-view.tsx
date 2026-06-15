@@ -7,16 +7,18 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
 import { TutorCard } from "@/components/tutors/tutor-card";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { TutorGridSkeleton } from "@/components/common/content-skeletons";
 import { SearchInput } from "@/components/common/search-input";
-import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
-import { tutorsListQueryOptions } from "@/lib/queries/list-queries";
 import {
   useDebouncedValue,
   useUrlSyncedSearch,
 } from "@/components/common/list-filter-toolbar";
+import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
+import { tutorsListQueryOptions } from "@/lib/queries/list-queries";
+import { isApiForbiddenError } from "@/lib/api-error";
 
 export function TutorsDirectoryView() {
   const searchParams = useSearchParams();
@@ -37,9 +39,20 @@ export function TutorsDirectoryView() {
     [page, debouncedName, debouncedQual],
   );
 
-  const { data, isLoading } = useQuery(queryOptions);
+  const { data, isLoading, isError, error } = useQuery(queryOptions);
   const tutors = data?.data ?? [];
   const pagination = resolvePaginationMeta(data?.meta, page, DEFAULT_PAGE_SIZE);
+
+  if (isError && isApiForbiddenError(error)) {
+    return (
+      <ErrorState
+        title="Access denied"
+        message="Only parents can browse the tutor directory."
+        actionLabel="Go to dashboard"
+        actionHref="/dashboard"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

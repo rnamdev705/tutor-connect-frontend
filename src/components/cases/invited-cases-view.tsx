@@ -2,15 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, Loader2, Mail, MoreHorizontal, X } from "lucide-react";
-import { patchInvitationsByIdMutation } from "@/api/@tanstack/react-query.gen";
-import type { GetInvitationsResponse } from "@/api/types.gen";
-import {
-  invalidateCaseData,
-  setInvitationInListCache,
-} from "@/lib/queries/invalidate";
-import { isQueryKey, queryKeyIds } from "@/lib/queries/query-keys";
+import { useQuery } from "@tanstack/react-query";
+import { Eye, Mail, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -33,30 +26,34 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PaginationControls } from "@/components/common/pagination-controls";
+import { LoadingStatusCell } from "@/components/common/loading-status-cell";
+import { InvitationStatusCell } from "@/components/cases/invitation-status-cell";
+import { TutorInvitationResponseActions } from "@/components/cases/tutor-invitation-response-actions";
+import { ConfirmActionModal } from "@/components/modals/confirm-action-modal";
 import {
   FilterSelect,
   ListFilterToolbar,
   useUrlSyncedSearch,
 } from "@/components/common/list-filter-toolbar";
-import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
-import { getApiErrorMessage } from "@/lib/api-error";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { invitationsListQueryOptions } from "@/lib/queries/list-queries";
-import { canRespondToInvitation } from "@/lib/case-invites";
-import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
-import { toast } from "sonner";
+import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
 
 export function InvitedCasesView() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get("search") ?? "";
-  const queryClient = useQueryClient();
   const [invitationFilter, setInvitationFilter] = useState("all");
+  const [declineTargetId, setDeclineTargetId] = useState<string | null>(null);
+  const [acceptTargetId, setAcceptTargetId] = useState<string | null>(null);
   const { search, setSearch, debouncedSearch, page, setPage } =
     useUrlSyncedSearch(urlSearch);
+
+  const { accept, decline, isResponding, getResponseAction } =
+    useTutorInvitationResponse();
 
   const queryOptions = useMemo(
     () =>
@@ -82,37 +79,6 @@ export function InvitedCasesView() {
     enabled: user?.role === "tutor",
   });
 
-  const { trackResponse, isResponding, getResponseAction } =
-    usePendingInvitationResponses();
-
-  const responseMutation = useMutation({
-    ...patchInvitationsByIdMutation(),
-    onMutate: async () => {
-      await queryClient.cancelQueries({
-        predicate: (query) => isQueryKey(query, queryKeyIds.invitations),
-      });
-      const previous = queryClient.getQueriesData<GetInvitationsResponse>({
-        predicate: (query) => isQueryKey(query, queryKeyIds.invitations),
-      });
-      return { previous };
-    },
-    onSuccess: (updated) => {
-      setInvitationInListCache(queryClient, updated);
-      void invalidateCaseData(queryClient, updated.caseId);
-      toast.success(
-        updated.status === "accepted"
-          ? "Case invitation accepted"
-          : "Case invitation declined",
-      );
-    },
-    onError: (error, _variables, context) => {
-      context?.previous.forEach(([key, value]) => {
-        queryClient.setQueryData(key, value);
-      });
-      toast.error(getApiErrorMessage(error));
-    },
-  });
-
   const rows = useMemo(
     () => (data?.data ?? []).map((invitation) => ({ invitation, case: invitation.case })),
     [data?.data],
@@ -120,23 +86,8 @@ export function InvitedCasesView() {
 
   const pagination = resolvePaginationMeta(data?.meta, page, DEFAULT_PAGE_SIZE);
 
-  const handleAccept = (invitationId: string) => {
-    trackResponse(invitationId, "accept", () =>
-      responseMutation.mutateAsync({
-        path: { id: invitationId },
-        body: { status: "accepted" },
-      }),
-    );
-  };
-
-  const handleDecline = (invitationId: string) => {
-    trackResponse(invitationId, "decline", () =>
-      responseMutation.mutateAsync({
-        path: { id: invitationId },
-        body: { status: "declined" },
-      }),
-    );
-  };
+  const declineTarget = rows.find((row) => row.invitation.id === declineTargetId);
+  const acceptTarget = rows.find((row) => row.invitation.id === acceptTargetId);
 
   if (user?.role !== "tutor") {
     return (
@@ -222,7 +173,6 @@ export function InvitedCasesView() {
                   const responseAction = getResponseAction(invitation.id);
                   const accepting = responding && responseAction === "accept";
                   const declining = responding && responseAction === "decline";
-                  const canRespond = canRespondToInvitation(invitation.status);
 
                   return (
                     <TableRow
@@ -244,50 +194,28 @@ export function InvitedCasesView() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {accepting ? (
-                          <LoadingStatusCell
-                            label="Accepting..."
-                            className="font-medium text-emerald-700"
-                          />
-                        ) : declining ? (
-                          <LoadingStatusCell
-                            label="Declining..."
-                            className="font-medium text-muted-foreground"
-                          />
-                        ) : (
-                          <StatusBadge status={invitation.status} />
-                        )}
+                        <InvitationStatusCell
+                          invitationStatus={invitation.status}
+                          caseStatus={c.status}
+                          statusMessage={invitation.statusMessage}
+                          accepting={accepting}
+                          declining={declining}
+                        />
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(invitation.invitedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {canRespond &&
-                            (responding ? (
-                              <Button size="sm" disabled>
-                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                {accepting ? "Accepting..." : "Declining..."}
-                              </Button>
-                            ) : (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDecline(invitation.id)}
-                                >
-                                  <X className="mr-1.5 h-3.5 w-3.5" />
-                                  Decline
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAccept(invitation.id)}
-                                >
-                                  <Check className="mr-1.5 h-3.5 w-3.5" />
-                                  Accept
-                                </Button>
-                              </>
-                            ))}
+                          <TutorInvitationResponseActions
+                            invitationId={invitation.id}
+                            invitationStatus={invitation.status}
+                            caseStatus={c.status}
+                            isResponding={isResponding}
+                            getResponseAction={getResponseAction}
+                            onAcceptRequest={setAcceptTargetId}
+                            onDeclineRequest={setDeclineTargetId}
+                          />
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -323,6 +251,44 @@ export function InvitedCasesView() {
           />
         </CardContent>
       </Card>
+
+      <ConfirmActionModal
+        open={acceptTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setAcceptTargetId(null);
+        }}
+        title="Accept invitation"
+        description={
+          acceptTarget
+            ? `Accept the invitation to tutor "${acceptTarget.case.title}"? You will be matched with this case and other pending tutors will no longer be able to accept.`
+            : "Accept this case invitation?"
+        }
+        confirmLabel="Accept invitation"
+        onConfirm={() => {
+          if (!acceptTargetId) return;
+          accept(acceptTargetId);
+          setAcceptTargetId(null);
+        }}
+      />
+
+      <ConfirmActionModal
+        open={declineTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeclineTargetId(null);
+        }}
+        title="Decline invitation"
+        description={
+          declineTarget
+            ? `Decline the invitation to tutor "${declineTarget.case.title}"? The parent can invite you again later if the case is still open.`
+            : "Decline this case invitation?"
+        }
+        confirmLabel="Decline invitation"
+        onConfirm={() => {
+          if (!declineTargetId) return;
+          decline(declineTargetId);
+          setDeclineTargetId(null);
+        }}
+      />
     </div>
   );
 }

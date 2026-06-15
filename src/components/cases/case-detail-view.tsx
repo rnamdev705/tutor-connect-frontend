@@ -35,6 +35,10 @@ import { usePendingDocumentDeletes } from "@/lib/hooks/use-pending-document-dele
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { usePendingTutorInvites } from "@/lib/hooks/use-pending-invites";
 import { usePendingInvitationRevokes } from "@/lib/hooks/use-pending-invitation-revokes";
+import { ConfirmActionModal } from "@/components/modals/confirm-action-modal";
+import { InvitationStatusCell } from "@/components/cases/invitation-status-cell";
+import { TutorInvitationResponseActions } from "@/components/cases/tutor-invitation-response-actions";
+import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
 import { toast } from "sonner";
 
 interface CaseDetailViewProps {
@@ -49,7 +53,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteCaseOpen, setDeleteCaseOpen] = useState(false);
   const [deleteDocOpen, setDeleteDocOpen] = useState(false);
+  const [declineInviteOpen, setDeclineInviteOpen] = useState(false);
+  const [acceptInviteOpen, setAcceptInviteOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+
+  const { accept, decline, isResponding, getResponseAction } = useTutorInvitationResponse();
 
   const { pendingUploads, trackUpload } = usePendingDocumentUploads(caseId);
   const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
@@ -150,6 +158,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const caseIsDeleting = isDeletingCase(caseId);
   const canInvite = canInviteTutorsToCase(caseData.status);
   const canDelete = canDeleteCase(caseData.status);
+  const myInvitation =
+    user?.role === "tutor"
+      ? caseData.invitations.find((inv) => inv.tutorUserId === user.id)
+      : undefined;
+  const respondingToMine = myInvitation ? isResponding(myInvitation.id) : false;
+  const myResponseAction = myInvitation ? getResponseAction(myInvitation.id) : undefined;
 
   return (
     <div className="relative space-y-6">
@@ -196,6 +210,33 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
             <p>{matchedCaseHint()}</p>
           </div>
+        )}
+
+        {myInvitation && (
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Your invitation</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <InvitationStatusCell
+                invitationStatus={myInvitation.status}
+                caseStatus={caseData.status}
+                statusMessage={myInvitation.statusMessage}
+                accepting={respondingToMine && myResponseAction === "accept"}
+                declining={respondingToMine && myResponseAction === "decline"}
+              />
+              <TutorInvitationResponseActions
+                invitationId={myInvitation.id}
+                invitationStatus={myInvitation.status}
+                caseStatus={caseData.status}
+                isResponding={isResponding}
+                getResponseAction={getResponseAction}
+                onAcceptRequest={() => setAcceptInviteOpen(true)}
+                onDeclineRequest={() => setDeclineInviteOpen(true)}
+                size="default"
+              />
+            </CardContent>
+          </Card>
         )}
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -297,6 +338,31 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             uploadMutation.mutateAsync({ path: { caseId }, body: { file } }),
           )
         }
+      />
+
+      <ConfirmActionModal
+        open={acceptInviteOpen}
+        onOpenChange={setAcceptInviteOpen}
+        title="Accept invitation"
+        description={`Accept the invitation to tutor "${caseData.title}"? You will be matched with this case and other pending tutors will no longer be able to accept.`}
+        confirmLabel="Accept invitation"
+        onConfirm={() => {
+          if (!myInvitation) return;
+          accept(myInvitation.id);
+          setAcceptInviteOpen(false);
+        }}
+      />
+
+      <ConfirmActionModal
+        open={declineInviteOpen}
+        onOpenChange={setDeclineInviteOpen}
+        title="Decline invitation"
+        description={`Decline the invitation to tutor "${caseData.title}"? The parent can invite you again later if the case is still open.`}
+        confirmLabel="Decline invitation"
+        onConfirm={() => {
+          if (!myInvitation) return;
+          decline(myInvitation.id);
+        }}
       />
 
       <DeleteConfirmationModal

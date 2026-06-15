@@ -32,7 +32,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { TutorProfileContentSkeleton, DocumentTableSkeleton } from "@/components/common/content-skeletons";
 import { InviteToCaseModal } from "@/components/modals/invite-to-case-modal";
 import { useAuth } from "@/lib/auth-context";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { getApiErrorMessage, isApiForbiddenError } from "@/lib/api-error";
 import { usePendingCaseInvites } from "@/lib/hooks/use-pending-invites";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
@@ -49,7 +49,7 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
   const [inviteOpen, setInviteOpen] = useState(false);
   const { pendingInvites, trackInvite, hasPending } = usePendingCaseInvites();
 
-  const { data: tutor, isLoading, isError } = useQuery(
+  const { data: tutor, isLoading, isError, error } = useQuery(
     getTutorsByIdOptions({ path: { id: tutorId } }),
   );
 
@@ -82,6 +82,17 @@ export function TutorProfileDetailView({ tutorId }: TutorProfileDetailViewProps)
   }
 
   if (isError || !tutor) {
+    if (isApiForbiddenError(error)) {
+      return (
+        <ErrorState
+          title="Access denied"
+          message="You cannot view other tutors' profiles."
+          actionLabel={user?.role === "tutor" ? "Go to my profile" : "Back to directory"}
+          actionHref={user?.role === "tutor" ? "/profile" : "/tutors"}
+        />
+      );
+    }
+
     return (
       <ErrorState
         title="Tutor not found"

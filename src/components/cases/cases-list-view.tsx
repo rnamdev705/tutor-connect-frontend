@@ -45,7 +45,7 @@ import {
 import { casesListQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateCaseData } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
-import { canDeleteCase } from "@/lib/case-invites";
+import { canDeleteCase, isCaseEditLocked } from "@/lib/case-invites";
 import type { Case } from "@/api/types.gen";
 import { toast } from "sonner";
 
@@ -86,10 +86,12 @@ function CaseTableRow({
                 <Eye className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
+              {!isCaseEditLocked(caseItem.status) && (
+                <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              )}
               {canDeleteCase(caseItem.status) && (
                 <DropdownMenuItem
                   className="text-destructive"

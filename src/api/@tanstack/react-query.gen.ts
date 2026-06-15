@@ -235,7 +235,7 @@ export const postCasesMutation = (options?: Partial<Options<PostCasesData>>): Us
 /**
  * Delete case
  *
- * Deletes a tuition case and cascades related invitations and documents. Only the parent who owns the case may call this endpoint.
+ * Deletes a tuition case and cascades related invitations and documents. Only the parent who owns the case may call this endpoint. Only open cases can be deleted.
  */
 export const deleteCasesByIdMutation = (options?: Partial<Options<DeleteCasesByIdData>>): UseMutationOptions<DeleteCasesByIdResponse, DeleteCasesByIdError, Options<DeleteCasesByIdData>> => {
     const mutationOptions: UseMutationOptions<DeleteCasesByIdResponse, DeleteCasesByIdError, Options<DeleteCasesByIdData>> = {
@@ -519,7 +519,7 @@ export const getTutorsQueryKey = (options?: Options<GetTutorsData>) => createQue
 /**
  * List tutors
  *
- * Returns a paginated directory of tutor profiles. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
+ * Returns a paginated directory of tutor profiles. Parents only. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
  */
 export const getTutorsOptions = (options?: Options<GetTutorsData>) => queryOptions<GetTutorsResponse, GetTutorsError, GetTutorsResponse, ReturnType<typeof getTutorsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -539,7 +539,7 @@ export const getTutorsInfiniteQueryKey = (options?: Options<GetTutorsData>): Que
 /**
  * List tutors
  *
- * Returns a paginated directory of tutor profiles. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
+ * Returns a paginated directory of tutor profiles. Parents only. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
  */
 export const getTutorsInfiniteOptions = (options?: Options<GetTutorsData>) => infiniteQueryOptions<GetTutorsResponse, GetTutorsError, InfiniteData<GetTutorsResponse>, QueryKey<Options<GetTutorsData>>, number | Pick<QueryKey<Options<GetTutorsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
 // @ts-ignore
@@ -568,7 +568,7 @@ export const getTutorsByIdQueryKey = (options: Options<GetTutorsByIdData>) => cr
 /**
  * Get tutor profile
  *
- * Returns a single tutor's public profile by profile id. Any authenticated user may view profiles in the directory.
+ * Returns a single tutor's public profile by profile id. Parents may view any profile. Tutors may only view their own profile (use GET /tutors/me/profile for self).
  */
 export const getTutorsByIdOptions = (options: Options<GetTutorsByIdData>) => queryOptions<GetTutorsByIdResponse, GetTutorsByIdError, GetTutorsByIdResponse, ReturnType<typeof getTutorsByIdQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -627,7 +627,7 @@ export const getTutorsByIdDocumentsQueryKey = (options: Options<GetTutorsByIdDoc
 /**
  * List profile documents
  *
- * Lists documents attached to a tutor profile (metadata only). Any authenticated user may view documents on public profiles.
+ * Lists documents attached to a tutor profile (metadata only). Parents may view any profile's documents. Tutors may only view documents on their own profile.
  */
 export const getTutorsByIdDocumentsOptions = (options: Options<GetTutorsByIdDocumentsData>) => queryOptions<GetTutorsByIdDocumentsResponse, GetTutorsByIdDocumentsError, GetTutorsByIdDocumentsResponse, ReturnType<typeof getTutorsByIdDocumentsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

@@ -63,12 +63,6 @@ function toUserFacingMessage(payload: ApiErrorPayload | null, fallback?: string)
   return message;
 }
 
-/** True when the API returned 503 because Neon/DB is waking up. */
-export function isDbUnavailableError(error: unknown): boolean {
-  const payload = extractApiErrorPayload(error);
-  return payload?.code === "DB_UNAVAILABLE";
-}
-
 /** Maps API / network errors to a safe string for toasts and inline UI copy. */
 export function getApiErrorMessage(error: unknown): string {
   const payload = extractApiErrorPayload(error);
@@ -86,4 +80,18 @@ export function getApiErrorMessage(error: unknown): string {
   }
 
   return GENERIC_ERROR;
+}
+
+export function getApiErrorCode(error: unknown): string | undefined {
+  return extractApiErrorPayload(error)?.code;
+}
+
+/** True when the API returned 403 with FORBIDDEN. */
+export function isApiForbiddenError(error: unknown): boolean {
+  return getApiErrorCode(error) === "FORBIDDEN";
+}
+
+/** True when the API returned 503 because Neon/DB is waking up. */
+export function isDbUnavailableError(error: unknown): boolean {
+  return getApiErrorCode(error) === "DB_UNAVAILABLE";
 }

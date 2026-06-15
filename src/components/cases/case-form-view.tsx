@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/card";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
 import { FormContentSkeleton } from "@/components/common/content-skeletons";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -67,7 +68,7 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: existingCase, isLoading } = useQuery({
+  const { data: existingCase, isLoading, isError } = useQuery({
     ...caseDetailQueryOptions(caseId!),
     enabled: mode === "edit" && !!caseId,
   });
@@ -203,6 +204,17 @@ export function CaseFormView({ caseId, mode }: CaseFormViewProps) {
         </div>
         <FormContentSkeleton sections={3} />
       </div>
+    );
+  }
+
+  if (mode === "edit" && (isError || !existingCase)) {
+    return (
+      <ErrorState
+        title="Case not found"
+        message="This case does not exist or you do not have access."
+        actionLabel="Back to cases"
+        actionHref="/cases"
+      />
     );
   }
 

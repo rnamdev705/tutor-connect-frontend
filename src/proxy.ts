@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { decodeTokenRole } from "@/lib/jwt-decode";
+import { isRoleAllowedForPath } from "@/lib/route-access";
 
 const AUTH_COOKIE = "tutorconnect-token";
 
@@ -24,6 +26,14 @@ function isProtectedPath(pathname: string) {
   return protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
 }
 
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("next", pathname);
+  const response = NextResponse.redirect(loginUrl);
+  response.cookies.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
+  return response;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE)?.value;
@@ -36,9 +46,19 @@ export function proxy(request: NextRequest) {
   }
 
   if (isProtectedPath(pathname) && !token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectToLogin(request, pathname);
+  }
+
+  if (token && isProtectedPath(pathname)) {
+    const role = decodeTokenRole(token);
+
+    if (!role) {
+      return redirectToLogin(request, pathname);
+    }
+
+    if (!isRoleAllowedForPath(pathname, role)) {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
   }
 
   return NextResponse.next();

@@ -15,9 +15,36 @@ export function inviteClosedMessage(status: string): string | null {
   return null;
 }
 
-/** Tutors may accept or decline only pending invitations. */
-export function canRespondToInvitation(status: string): boolean {
-  return status === "pending";
+/** Tutors may accept or decline only pending invitations on open cases. */
+export function canRespondToInvitation(
+  invitationStatus: string,
+  caseStatus?: string,
+): boolean {
+  if (invitationStatus !== "pending") {
+    return false;
+  }
+
+  return caseStatus === undefined || caseStatus === "open";
+}
+
+/** Shown when invitation is still pending but the case no longer accepts responses. */
+export function invitationResponseBlockedReason(
+  invitationStatus: string,
+  caseStatus: string,
+): string | null {
+  if (invitationStatus !== "pending") {
+    return null;
+  }
+
+  if (caseStatus === "matched") {
+    return "This case has already been matched with another tutor.";
+  }
+
+  if (caseStatus === "closed") {
+    return "This case is closed and no longer accepts responses.";
+  }
+
+  return null;
 }
 
 /** Parents may revoke invitations except accepted ones. */

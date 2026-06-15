@@ -112,7 +112,7 @@ export const postCases = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Delete case
  *
- * Deletes a tuition case and cascades related invitations and documents. Only the parent who owns the case may call this endpoint.
+ * Deletes a tuition case and cascades related invitations and documents. Only the parent who owns the case may call this endpoint. Only open cases can be deleted.
  */
 export const deleteCasesById = <ThrowOnError extends boolean = false>(options: Options<DeleteCasesByIdData, ThrowOnError>): RequestResult<DeleteCasesByIdResponses, DeleteCasesByIdErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCasesByIdResponses, DeleteCasesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -264,7 +264,7 @@ export const patchInvitationsById = <ThrowOnError extends boolean = false>(optio
 /**
  * List tutors
  *
- * Returns a paginated directory of tutor profiles. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
+ * Returns a paginated directory of tutor profiles. Parents only. Query params: `page`, `limit`, `name` and `qualification` (combined with AND, matching the directory UI), or a single `search` across all profile fields (for invite flows). Response includes `meta` with total and totalPages.
  */
 export const getTutors = <ThrowOnError extends boolean = false>(options?: Options<GetTutorsData, ThrowOnError>): RequestResult<GetTutorsResponses, GetTutorsErrors, ThrowOnError> => (options?.client ?? client).get<GetTutorsResponses, GetTutorsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -275,7 +275,7 @@ export const getTutors = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Get tutor profile
  *
- * Returns a single tutor's public profile by profile id. Any authenticated user may view profiles in the directory.
+ * Returns a single tutor's public profile by profile id. Parents may view any profile. Tutors may only view their own profile (use GET /tutors/me/profile for self).
  */
 export const getTutorsById = <ThrowOnError extends boolean = false>(options: Options<GetTutorsByIdData, ThrowOnError>): RequestResult<GetTutorsByIdResponses, GetTutorsByIdErrors, ThrowOnError> => (options.client ?? client).get<GetTutorsByIdResponses, GetTutorsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -312,7 +312,7 @@ export const putTutorsMeProfile = <ThrowOnError extends boolean = false>(options
 /**
  * List profile documents
  *
- * Lists documents attached to a tutor profile (metadata only). Any authenticated user may view documents on public profiles.
+ * Lists documents attached to a tutor profile (metadata only). Parents may view any profile's documents. Tutors may only view documents on their own profile.
  */
 export const getTutorsByIdDocuments = <ThrowOnError extends boolean = false>(options: Options<GetTutorsByIdDocumentsData, ThrowOnError>): RequestResult<GetTutorsByIdDocumentsResponses, GetTutorsByIdDocumentsErrors, ThrowOnError> => (options.client ?? client).get<GetTutorsByIdDocumentsResponses, GetTutorsByIdDocumentsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
