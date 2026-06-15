@@ -63,6 +63,12 @@ function toUserFacingMessage(payload: ApiErrorPayload | null, fallback?: string)
   return message;
 }
 
+/** True when the API returned 503 because Neon/DB is waking up. */
+export function isDbUnavailableError(error: unknown): boolean {
+  const payload = extractApiErrorPayload(error);
+  return payload?.code === "DB_UNAVAILABLE";
+}
+
 /** Maps API / network errors to a safe string for toasts and inline UI copy. */
 export function getApiErrorMessage(error: unknown): string {
   const payload = extractApiErrorPayload(error);

@@ -38,7 +38,7 @@ export const DOC_SECTIONS: DocSection[] = [
     description: "Public vs protected routes",
     content: [
       "Public: /login, /register, /docs, /unauthorized.",
-      "Protected (middleware + AppShell): /dashboard, /cases, /tutors, /invitations, /profile.",
+      "Protected (proxy + AppShell): /dashboard, /cases, /tutors, /invitations, /profile.",
       "Parent nav: Dashboard, My Cases, Tutor Directory, Profile.",
       "Tutor nav: Dashboard, Invited Cases, My Profile.",
     ],
@@ -61,8 +61,8 @@ export const DOC_SECTIONS: DocSection[] = [
     description: "Session, validation, and role checks",
     content: [
       "AuthProvider (lib/auth-context.tsx) exposes useAuth(): user, login, register, logout.",
-      "JWT stored in localStorage; mirrored to a cookie for Next.js middleware route protection.",
-      "AppShell redirects unauthenticated users; middleware guards protected routes on first load.",
+      "JWT stored in localStorage; mirrored to a cookie for Next.js proxy route protection.",
+      "AppShell redirects unauthenticated users; proxy guards protected routes on first load.",
       "api-error.ts sanitizes internal server errors before showing them in the UI.",
       "Register validation: Zod schema in lib/validations/auth.ts.",
     ],
@@ -94,7 +94,7 @@ export const DOC_SECTIONS: DocSection[] = [
 ];
 
 export const TECH_STACK = [
-  { name: "Next.js 16", detail: "App Router, middleware, server/client components" },
+  { name: "Next.js 16", detail: "App Router, proxy, server/client components" },
   { name: "React 19", detail: "UI with hooks and TanStack Query" },
   { name: "TypeScript", detail: "Strict typing with OpenAPI-generated API types" },
   { name: "TanStack Query v5", detail: "Server-side pagination, cache, mutations" },

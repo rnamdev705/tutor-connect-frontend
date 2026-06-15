@@ -6,6 +6,15 @@ import { useState } from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { isDbUnavailableError } from "@/lib/api-error";
+
+/** Retry Neon cold-start 503s with backoff; other failures retry once. */
+function queryRetry(failureCount: number, error: unknown): boolean {
+  if (isDbUnavailableError(error)) {
+    return failureCount < 3;
+  }
+  return failureCount < 1;
+}
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -14,8 +23,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 30_000,
-            retry: 1,
+            retry: queryRetry,
+            retryDelay: (attempt, error) =>
+              isDbUnavailableError(error) ? 2_000 * (attempt + 1) : 1_000,
             refetchOnWindowFocus: false,
+          },
+          mutations: {
+            retry: queryRetry,
+            retryDelay: (attempt, error) =>
+              isDbUnavailableError(error) ? 2_000 * (attempt + 1) : 1_000,
           },
         },
       }),

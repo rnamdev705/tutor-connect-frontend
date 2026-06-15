@@ -21,7 +21,7 @@ export function setAuthToken(token: string | null): void {
   }
 }
 
-/** Sync localStorage token to cookie for middleware route protection. */
+/** Sync localStorage token to cookie for proxy route protection. */
 export function syncAuthCookieFromStorage(): void {
   if (typeof window === "undefined") return;
   const token = localStorage.getItem(TOKEN_STORAGE_KEY);
