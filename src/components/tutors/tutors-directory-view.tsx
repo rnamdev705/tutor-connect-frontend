@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -13,20 +13,18 @@ import { TutorGridSkeleton } from "@/components/common/content-skeletons";
 import { SearchInput } from "@/components/common/search-input";
 import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
 import { tutorsListQueryOptions } from "@/lib/queries/list-queries";
-import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
+import {
+  useDebouncedValue,
+  useUrlSyncedSearch,
+} from "@/components/common/list-filter-toolbar";
 
 export function TutorsDirectoryView() {
   const searchParams = useSearchParams();
-  const [nameSearch, setNameSearch] = useState("");
+  const urlSearch = searchParams.get("search") ?? "";
   const [qualSearch, setQualSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const debouncedName = useDebouncedValue(nameSearch);
+  const { search: nameSearch, setSearch: setNameSearch, debouncedSearch: debouncedName, page, setPage } =
+    useUrlSyncedSearch(urlSearch);
   const debouncedQual = useDebouncedValue(qualSearch);
-
-  useEffect(() => {
-    const initialSearch = searchParams.get("search");
-    if (initialSearch) setNameSearch(initialSearch);
-  }, [searchParams]);
 
   const queryOptions = useMemo(
     () =>
@@ -56,10 +54,7 @@ export function TutorsDirectoryView() {
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
             <SearchInput
               value={nameSearch}
-              onChange={(value) => {
-                setNameSearch(value);
-                setPage(1);
-              }}
+              onChange={setNameSearch}
               placeholder="Search by name..."
             />
             <SearchInput

@@ -82,3 +82,28 @@ export function useDebouncedValue<T>(value: T, delayMs = 300): T {
 
   return debounced;
 }
+
+/**
+ * Syncs list search with ?search= URL param (navbar) and debounces API calls.
+ * Resets to page 1 whenever the URL search changes.
+ */
+export function useUrlSyncedSearch(
+  urlSearch: string,
+  debounceMs = 300,
+) {
+  const [search, setSearch] = useState(urlSearch);
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(search, debounceMs);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setPage(1);
+  }, [urlSearch]);
+
+  const updateSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  return { search, setSearch: updateSearch, debouncedSearch, page, setPage };
+}

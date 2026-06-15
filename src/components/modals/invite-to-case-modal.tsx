@@ -17,8 +17,8 @@ import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
 import { InvitingStatusCell } from "@/components/common/pending-status-cells";
+import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import { formatCurrency } from "@/lib/format";
-import { matchesCaseSearch } from "@/lib/pagination";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
 import type { Case } from "@/api/types.gen";
 
@@ -41,16 +41,18 @@ export function InviteToCaseModal({
 }: InviteToCaseModalProps) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Case | null>(null);
+  const debouncedSearch = useDebouncedValue(search);
 
-  const { data, isLoading } = useQuery({
-    ...openCasesForInviteQueryOptions(tutorProfileId),
-    enabled: open,
-  });
-
-  const cases = useMemo(
-    () => (data?.data ?? []).filter((caseItem) => matchesCaseSearch(caseItem, search)),
-    [data?.data, search],
+  const queryOptions = useMemo(
+    () => ({
+      ...openCasesForInviteQueryOptions(tutorProfileId, debouncedSearch),
+      enabled: open,
+    }),
+    [tutorProfileId, debouncedSearch, open],
   );
+
+  const { data, isLoading } = useQuery(queryOptions);
+  const cases = data?.data ?? [];
 
   const handleConfirm = () => {
     if (!selected) return;

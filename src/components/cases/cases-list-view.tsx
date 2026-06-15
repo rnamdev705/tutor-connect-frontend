@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, Eye, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
@@ -32,7 +32,7 @@ import { DeletingStatusCell } from "@/components/common/pending-status-cells";
 import {
   FilterSelect,
   ListFilterToolbar,
-  useDebouncedValue,
+  useUrlSyncedSearch,
 } from "@/components/common/list-filter-toolbar";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -108,21 +108,16 @@ export function CasesListView() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") ?? "";
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
   const [subject, setSubject] = useState("all");
   const [level, setLevel] = useState("all");
   const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
   const { trackDelete, isDeleting, hasPending } = usePendingCaseDeletes();
-  const debouncedSearch = useDebouncedValue(search);
-
-  useEffect(() => {
-    const initialSearch = searchParams.get("search");
-    if (initialSearch) setSearch(initialSearch);
-  }, [searchParams]);
+  const { search, setSearch, debouncedSearch, page, setPage } =
+    useUrlSyncedSearch(urlSearch);
 
   const queryOptions = useMemo(
     () =>
@@ -197,10 +192,7 @@ export function CasesListView() {
         <CardContent className="pt-6">
           <ListFilterToolbar
             search={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
+            onSearchChange={setSearch}
             searchPlaceholder="Search cases..."
           >
             <FilterSelect

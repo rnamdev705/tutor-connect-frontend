@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Eye, Loader2, Mail, MoreHorizontal } from "lucide-react";
@@ -36,7 +36,7 @@ import { PaginationControls } from "@/components/common/pagination-controls";
 import {
   FilterSelect,
   ListFilterToolbar,
-  useDebouncedValue,
+  useUrlSyncedSearch,
 } from "@/components/common/list-filter-toolbar";
 import {
   AcceptingStatusCell,
@@ -54,16 +54,11 @@ export function InvitedCasesView() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") ?? "";
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
   const [invitationFilter, setInvitationFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const debouncedSearch = useDebouncedValue(search);
-
-  useEffect(() => {
-    const initialSearch = searchParams.get("search");
-    if (initialSearch) setSearch(initialSearch);
-  }, [searchParams]);
+  const { search, setSearch, debouncedSearch, page, setPage } =
+    useUrlSyncedSearch(urlSearch);
 
   const queryOptions = useMemo(
     () =>
@@ -168,10 +163,7 @@ export function InvitedCasesView() {
         <CardContent className="pt-6">
           <ListFilterToolbar
             search={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
+            onSearchChange={setSearch}
             searchPlaceholder="Search cases..."
           >
             <FilterSelect

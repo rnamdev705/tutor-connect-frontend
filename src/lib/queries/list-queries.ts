@@ -51,13 +51,17 @@ export function tutorsSearchQueryOptions(search: string, enabled: boolean) {
   });
 }
 
-export function openCasesForInviteQueryOptions(tutorProfileId: string) {
+export function openCasesForInviteQueryOptions(
+  tutorProfileId: string,
+  search = "",
+) {
   return casesListQueryOptions({
     page: 1,
     limit: MAX_FETCH_LIMIT,
     skipCount: true,
     status: "open",
     tutorProfileId,
+    ...(search.trim() ? { search: search.trim() } : {}),
   });
 }
 
