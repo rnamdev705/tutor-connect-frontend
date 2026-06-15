@@ -91,6 +91,10 @@ export function isApiForbiddenError(error: unknown): boolean {
   return getApiErrorCode(error) === "FORBIDDEN";
 }
 
+export function isResponseLimitError(error: unknown): boolean {
+  return getApiErrorCode(error) === "RESPONSE_LIMIT_REACHED";
+}
+
 /** True when the API returned 503 because Neon/DB is waking up. */
 export function isDbUnavailableError(error: unknown): boolean {
   return getApiErrorCode(error) === "DB_UNAVAILABLE";

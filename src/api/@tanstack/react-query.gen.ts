@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { deleteCasesById, deleteCasesByIdInvitationsByTutorId, deleteDocumentsById, getAuthMe, getCases, getCasesByCaseIdDocuments, getCasesById, getDocumentsByIdDownload, getHealth, getHealthReady, getInvitations, getTutors, getTutorsById, getTutorsByIdDocuments, getTutorsMeProfile, type Options, patchAuthMe, patchCasesById, patchInvitationsById, postAuthLogin, postAuthLogout, postAuthRegister, postCases, postCasesByCaseIdDocuments, postCasesByIdInvitations, postTutorsMeProfileDocuments, putTutorsMeProfile } from '../sdk.gen';
-import type { DeleteCasesByIdData, DeleteCasesByIdError, DeleteCasesByIdInvitationsByTutorIdData, DeleteCasesByIdInvitationsByTutorIdError, DeleteCasesByIdInvitationsByTutorIdResponse, DeleteCasesByIdResponse, DeleteDocumentsByIdData, DeleteDocumentsByIdError, DeleteDocumentsByIdResponse, GetAuthMeData, GetAuthMeError, GetAuthMeResponse, GetCasesByCaseIdDocumentsData, GetCasesByCaseIdDocumentsError, GetCasesByCaseIdDocumentsResponse, GetCasesByIdData, GetCasesByIdError, GetCasesByIdResponse, GetCasesData, GetCasesError, GetCasesResponse, GetDocumentsByIdDownloadData, GetDocumentsByIdDownloadError, GetDocumentsByIdDownloadResponse, GetHealthData, GetHealthReadyData, GetHealthReadyError, GetHealthReadyResponse, GetHealthResponse, GetInvitationsData, GetInvitationsError, GetInvitationsResponse, GetTutorsByIdData, GetTutorsByIdDocumentsData, GetTutorsByIdDocumentsError, GetTutorsByIdDocumentsResponse, GetTutorsByIdError, GetTutorsByIdResponse, GetTutorsData, GetTutorsError, GetTutorsMeProfileData, GetTutorsMeProfileError, GetTutorsMeProfileResponse, GetTutorsResponse, PatchAuthMeData, PatchAuthMeError, PatchAuthMeResponse, PatchCasesByIdData, PatchCasesByIdError, PatchCasesByIdResponse, PatchInvitationsByIdData, PatchInvitationsByIdError, PatchInvitationsByIdResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthRegisterData, PostAuthRegisterError, PostAuthRegisterResponse, PostCasesByCaseIdDocumentsData, PostCasesByCaseIdDocumentsError, PostCasesByCaseIdDocumentsResponse, PostCasesByIdInvitationsData, PostCasesByIdInvitationsError, PostCasesByIdInvitationsResponse, PostCasesData, PostCasesError, PostCasesResponse, PostTutorsMeProfileDocumentsData, PostTutorsMeProfileDocumentsError, PostTutorsMeProfileDocumentsResponse, PutTutorsMeProfileData, PutTutorsMeProfileError, PutTutorsMeProfileResponse } from '../types.gen';
+import { deleteCasesById, deleteCasesByIdInvitationsByTutorId, deleteDocumentsById, getAuthMe, getCases, getCasesByCaseIdDocuments, getCasesById, getDocumentsByIdDownload, getHealth, getHealthReady, getInvitations, getTutors, getTutorsById, getTutorsByIdDocuments, getTutorsMeProfile, type Options, patchAuthMe, patchCasesById, patchInvitationsById, postAuthLogin, postAuthLogout, postAuthRegister, postCases, postCasesByCaseIdDocuments, postCasesByIdInvitations, postTutorsMeProfileDocuments, postTutorsMeSubscribe, putTutorsMeProfile } from '../sdk.gen';
+import type { DeleteCasesByIdData, DeleteCasesByIdError, DeleteCasesByIdInvitationsByTutorIdData, DeleteCasesByIdInvitationsByTutorIdError, DeleteCasesByIdInvitationsByTutorIdResponse, DeleteCasesByIdResponse, DeleteDocumentsByIdData, DeleteDocumentsByIdError, DeleteDocumentsByIdResponse, GetAuthMeData, GetAuthMeError, GetAuthMeResponse, GetCasesByCaseIdDocumentsData, GetCasesByCaseIdDocumentsError, GetCasesByCaseIdDocumentsResponse, GetCasesByIdData, GetCasesByIdError, GetCasesByIdResponse, GetCasesData, GetCasesError, GetCasesResponse, GetDocumentsByIdDownloadData, GetDocumentsByIdDownloadError, GetDocumentsByIdDownloadResponse, GetHealthData, GetHealthReadyData, GetHealthReadyError, GetHealthReadyResponse, GetHealthResponse, GetInvitationsData, GetInvitationsError, GetInvitationsResponse, GetTutorsByIdData, GetTutorsByIdDocumentsData, GetTutorsByIdDocumentsError, GetTutorsByIdDocumentsResponse, GetTutorsByIdError, GetTutorsByIdResponse, GetTutorsData, GetTutorsError, GetTutorsMeProfileData, GetTutorsMeProfileError, GetTutorsMeProfileResponse, GetTutorsResponse, PatchAuthMeData, PatchAuthMeError, PatchAuthMeResponse, PatchCasesByIdData, PatchCasesByIdError, PatchCasesByIdResponse, PatchInvitationsByIdData, PatchInvitationsByIdError, PatchInvitationsByIdResponse, PostAuthLoginData, PostAuthLoginError, PostAuthLoginResponse, PostAuthLogoutData, PostAuthLogoutError, PostAuthLogoutResponse, PostAuthRegisterData, PostAuthRegisterError, PostAuthRegisterResponse, PostCasesByCaseIdDocumentsData, PostCasesByCaseIdDocumentsError, PostCasesByCaseIdDocumentsResponse, PostCasesByIdInvitationsData, PostCasesByIdInvitationsError, PostCasesByIdInvitationsResponse, PostCasesData, PostCasesError, PostCasesResponse, PostTutorsMeProfileDocumentsData, PostTutorsMeProfileDocumentsError, PostTutorsMeProfileDocumentsResponse, PostTutorsMeSubscribeData, PostTutorsMeSubscribeError, PostTutorsMeSubscribeResponse, PutTutorsMeProfileData, PutTutorsMeProfileError, PutTutorsMeProfileResponse } from '../types.gen';
 
 /**
  * Create account
@@ -351,7 +351,7 @@ export const getCasesByCaseIdDocumentsOptions = (options: Options<GetCasesByCase
 /**
  * Upload document
  *
- * Uploads a document and attaches it to a tuition case. The file is sent as multipart form data with the field name `file`. Allowed types are PDF, DOCX, PNG, and JPG. Maximum file size is controlled by MAX_FILE_SIZE_MB (default 10 MB). The caller must have access to the case.
+ * Uploads a document and attaches it to a tuition case. The file is sent as multipart form data with the field name `file`. Allowed types are PDF, DOCX, PNG, and JPG. Maximum file size is controlled by MAX_FILE_SIZE_MB (default 10 MB). Only the parent who owns the case may upload.
  */
 export const postCasesByCaseIdDocumentsMutation = (options?: Partial<Options<PostCasesByCaseIdDocumentsData>>): UseMutationOptions<PostCasesByCaseIdDocumentsResponse, PostCasesByCaseIdDocumentsError, Options<PostCasesByCaseIdDocumentsData>> => {
     const mutationOptions: UseMutationOptions<PostCasesByCaseIdDocumentsResponse, PostCasesByCaseIdDocumentsError, Options<PostCasesByCaseIdDocumentsData>> = {
@@ -390,7 +390,7 @@ export const getDocumentsByIdDownloadOptions = (options: Options<GetDocumentsByI
 /**
  * Delete document
  *
- * Deletes a document. Allowed for the uploader, the case owner, or the profile owner.
+ * Deletes a document. Case documents: parent case owner only. Profile documents: tutor profile owner only.
  */
 export const deleteDocumentsByIdMutation = (options?: Partial<Options<DeleteDocumentsByIdData>>): UseMutationOptions<DeleteDocumentsByIdResponse, DeleteDocumentsByIdError, Options<DeleteDocumentsByIdData>> => {
     const mutationOptions: UseMutationOptions<DeleteDocumentsByIdResponse, DeleteDocumentsByIdError, Options<DeleteDocumentsByIdData>> = {
@@ -612,6 +612,25 @@ export const putTutorsMeProfileMutation = (options?: Partial<Options<PutTutorsMe
     const mutationOptions: UseMutationOptions<PutTutorsMeProfileResponse, PutTutorsMeProfileError, Options<PutTutorsMeProfileData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await putTutorsMeProfile({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Subscribe (demo)
+ *
+ * Activates unlimited case responses for the logged-in tutor. Demo-only — no real payment processing.
+ */
+export const postTutorsMeSubscribeMutation = (options?: Partial<Options<PostTutorsMeSubscribeData>>): UseMutationOptions<PostTutorsMeSubscribeResponse, PostTutorsMeSubscribeError, Options<PostTutorsMeSubscribeData>> => {
+    const mutationOptions: UseMutationOptions<PostTutorsMeSubscribeResponse, PostTutorsMeSubscribeError, Options<PostTutorsMeSubscribeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await postTutorsMeSubscribe({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

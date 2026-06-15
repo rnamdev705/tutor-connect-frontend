@@ -174,7 +174,7 @@ export function InviteToCaseModal({
             }
           >
             {selected &&
-            canReinviteTutor(selected.tutorInvitation?.status ?? "")
+            canReinviteTutor(selected.tutorInvitation?.status ?? "", "open")
               ? "Re-send Invitation"
               : "Send Invitation"}
           </Button>

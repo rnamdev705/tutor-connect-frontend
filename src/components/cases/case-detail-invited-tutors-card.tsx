@@ -24,10 +24,10 @@ import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { formatDate } from "@/lib/format";
 import {
   canInviteTutorsToCase,
-  canReinviteTutor,
   canRevokeInvitation,
+  canReinviteTutor,
   inviteClosedMessage,
-  reinviteStatusHint,
+  invitationHistoryHint,
 } from "@/lib/case-invites";
 import { PREVIEW_LIMIT } from "@/lib/pagination";
 import type { CaseDetail } from "@/api/types.gen";
@@ -130,7 +130,7 @@ export function CaseDetailInvitedTutorsCard({
               const reinviting =
                 inv.tutorProfileId != null &&
                 invitingTutorIds.includes(inv.tutorProfileId);
-              const reinviteHint = reinviteStatusHint(inv.status);
+              const historyHint = invitationHistoryHint(inv.status, caseData.status);
 
               return (
                 <li
@@ -151,8 +151,8 @@ export function CaseDetailInvitedTutorsCard({
                         <p className="text-xs text-muted-foreground">
                           Invited {formatDate(inv.invitedAt)}
                         </p>
-                        {reinviteHint && (
-                          <p className="text-xs text-muted-foreground">{reinviteHint}</p>
+                        {historyHint && (
+                          <p className="text-xs text-muted-foreground">{historyHint}</p>
                         )}
                       </>
                     )}
@@ -179,7 +179,7 @@ export function CaseDetailInvitedTutorsCard({
                             View Profile
                           </DropdownMenuItem>
                         )}
-                        {canReinviteTutor(inv.status) &&
+                        {canReinviteTutor(inv.status, caseData.status) &&
                           canInvite &&
                           inv.tutorProfileId &&
                           onReinvite && (

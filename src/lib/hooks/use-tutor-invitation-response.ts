@@ -1,9 +1,12 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchInvitationsByIdMutation } from "@/api/@tanstack/react-query.gen";
+import {
+  getTutorsMeProfileQueryKey,
+  patchInvitationsByIdMutation,
+} from "@/api/@tanstack/react-query.gen";
 import type { GetInvitationsResponse } from "@/api/types.gen";
-import { getApiErrorMessage } from "@/lib/api-error";
+import { getApiErrorMessage, isResponseLimitError } from "@/lib/api-error";
 import {
   invalidateCaseData,
   setInvitationInListCache,
@@ -12,7 +15,13 @@ import { isQueryKey, queryKeyIds } from "@/lib/queries/query-keys";
 import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
 import { toast } from "sonner";
 
-export function useTutorInvitationResponse() {
+interface UseTutorInvitationResponseOptions {
+  onResponseLimitReached?: () => void;
+}
+
+export function useTutorInvitationResponse(
+  options: UseTutorInvitationResponseOptions = {},
+) {
   const queryClient = useQueryClient();
   const { trackResponse, isResponding, getResponseAction } =
     usePendingInvitationResponses();
@@ -31,6 +40,7 @@ export function useTutorInvitationResponse() {
     onSuccess: (updated) => {
       setInvitationInListCache(queryClient, updated);
       void invalidateCaseData(queryClient, updated.caseId);
+      void queryClient.invalidateQueries({ queryKey: getTutorsMeProfileQueryKey() });
       toast.success(
         updated.status === "accepted"
           ? "Case invitation accepted"
@@ -41,6 +51,9 @@ export function useTutorInvitationResponse() {
       context?.previous.forEach(([key, value]) => {
         queryClient.setQueryData(key, value);
       });
+      if (isResponseLimitError(error)) {
+        options.onResponseLimitReached?.();
+      }
       toast.error(getApiErrorMessage(error));
     },
   });

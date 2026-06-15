@@ -40,6 +40,10 @@ import { ConfirmActionModal } from "@/components/modals/confirm-action-modal";
 import { InvitationStatusCell } from "@/components/cases/invitation-status-cell";
 import { TutorInvitationResponseActions } from "@/components/cases/tutor-invitation-response-actions";
 import { useTutorInvitationResponse } from "@/lib/hooks/use-tutor-invitation-response";
+import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { TutorResponseLimitBanner } from "@/components/subscription/tutor-response-limit-banner";
+import { SubscribeModal } from "@/components/modals/subscribe-modal";
+import { isResponseLimitReached } from "@/lib/tutor-subscription";
 import { textOverflow } from "@/lib/text-overflow";
 
 interface CaseDetailViewProps {
@@ -57,8 +61,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
   const [declineInviteOpen, setDeclineInviteOpen] = useState(false);
   const [acceptInviteOpen, setAcceptInviteOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
 
-  const { accept, decline, isResponding, getResponseAction } = useTutorInvitationResponse();
+  const { tutor } = useCurrentTutor();
+  const responseLimitReached = isResponseLimitReached(tutor);
+
+  const { accept, decline, isResponding, getResponseAction } = useTutorInvitationResponse({
+    onResponseLimitReached: () => setSubscribeOpen(true),
+  });
 
   const { pendingUploads, trackUpload } = usePendingDocumentUploads(caseId);
   const { trackDelete, isDeleting: isDeletingDocument } = usePendingDocumentDeletes();
@@ -218,7 +228,14 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Your invitation</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardContent className="space-y-4">
+              {tutor && (
+                <TutorResponseLimitBanner
+                  tutor={tutor}
+                  onSubscribe={() => setSubscribeOpen(true)}
+                />
+              )}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <InvitationStatusCell
                 invitationStatus={myInvitation.status}
                 caseStatus={caseData.status}
@@ -234,8 +251,11 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
                 getResponseAction={getResponseAction}
                 onAcceptRequest={() => setAcceptInviteOpen(true)}
                 onDeclineRequest={() => setDeclineInviteOpen(true)}
+                responseLimitReached={responseLimitReached}
+                onSubscribeRequest={() => setSubscribeOpen(true)}
                 size="default"
               />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -314,6 +334,7 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
       {canManage && canInvite && (
         <InviteTutorModal
           open={inviteOpen}
+          caseStatus={caseData.status}
           onOpenChange={(open) => {
             if (open && (inviteInProgress || hasPendingRevokes || caseIsDeleting)) return;
             setInviteOpen(open);
@@ -407,6 +428,12 @@ export function CaseDetailView({ caseId }: CaseDetailViewProps) {
           setDocumentToDelete(null);
           trackDelete(id, () => deleteDocumentMutation.mutateAsync({ path: { id } }));
         }}
+      />
+
+      <SubscribeModal
+        open={subscribeOpen}
+        onOpenChange={setSubscribeOpen}
+        responseLimit={tutor?.responseLimit}
       />
     </div>
   );

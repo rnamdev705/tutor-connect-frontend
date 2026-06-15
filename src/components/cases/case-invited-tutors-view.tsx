@@ -37,7 +37,7 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
 import { LoadingStatusCell } from "@/components/common/loading-status-cell";
 import { useAuth } from "@/lib/auth-context";
-import { canInviteTutorsToCase, canReinviteTutor, canRevokeInvitation, reinviteStatusHint } from "@/lib/case-invites";
+import { canInviteTutorsToCase, canReinviteTutor, canRevokeInvitation, invitationHistoryHint } from "@/lib/case-invites";
 import { formatDate } from "@/lib/format";
 import { textOverflow } from "@/lib/text-overflow";
 import { cn } from "@/lib/utils";
@@ -249,8 +249,10 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                   const reinviting =
                     row.tutorProfileId != null &&
                     pendingInvites.some((p) => p.tutorProfileId === row.tutorProfileId);
-                  const reinviteHint =
-                    row.kind === "invitation" ? reinviteStatusHint(row.status) : null;
+                  const historyHint =
+                    row.kind === "invitation"
+                      ? invitationHistoryHint(row.status, caseData.status)
+                      : null;
 
                   return (
                     <li
@@ -275,8 +277,8 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                             <p className="text-xs text-muted-foreground">
                               Invited {formatDate(row.invitedAt)}
                             </p>
-                            {reinviteHint && (
-                              <p className="text-xs text-muted-foreground">{reinviteHint}</p>
+                            {historyHint && (
+                              <p className="text-xs text-muted-foreground">{historyHint}</p>
                             )}
                           </>
                         )}
@@ -300,7 +302,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                                 View Profile
                               </DropdownMenuItem>
                             )}
-                            {canReinviteTutor(row.status) &&
+                            {canReinviteTutor(row.status, caseData.status) &&
                               canInvite &&
                               row.tutorProfileId && (
                                 <DropdownMenuItem
@@ -358,6 +360,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
       {canInvite && (
         <InviteTutorModal
           open={inviteOpen}
+          caseStatus={caseData.status}
           onOpenChange={(open) => {
             if (open && (inviteInProgress || hasPendingRevokes)) return;
             setInviteOpen(open);

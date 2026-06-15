@@ -241,6 +241,14 @@ export type TutorProfile = {
     updatedAt: string | null;
 };
 
+export type TutorMeProfile = TutorProfile & {
+    responsesUsed: number;
+    responseLimit: number;
+    subscribed: boolean;
+    subscribedAt: string | null;
+    responsesRemaining: number | null;
+};
+
 export type UpsertTutorProfileRequest = {
     displayName: string;
     qualifications: Array<string>;
@@ -469,10 +477,6 @@ export type DeleteCasesByIdErrors = {
      */
     401: Error;
     /**
-     * Not the case owner
-     */
-    403: Error;
-    /**
      * Case not found
      */
     404: Error;
@@ -543,10 +547,6 @@ export type PatchCasesByIdErrors = {
      */
     401: Error;
     /**
-     * Not the case owner
-     */
-    403: Error;
-    /**
      * Case not found
      */
     404: Error;
@@ -577,10 +577,6 @@ export type PostCasesByIdInvitationsErrors = {
      * Not authenticated
      */
     401: Error;
-    /**
-     * Not the case owner
-     */
-    403: Error;
     /**
      * Case or tutor not found
      */
@@ -627,10 +623,6 @@ export type DeleteCasesByIdInvitationsByTutorIdErrors = {
      * Not authenticated
      */
     401: Error;
-    /**
-     * Not the case owner
-     */
-    403: Error;
     /**
      * Case or invitation not found
      */
@@ -699,6 +691,10 @@ export type PostCasesByCaseIdDocumentsErrors = {
      * Not authenticated
      */
     401: Error;
+    /**
+     * Parents only (case owner)
+     */
+    403: Error;
     /**
      * Case not found
      */
@@ -957,10 +953,6 @@ export type GetTutorsByIdErrors = {
      */
     401: Error;
     /**
-     * Tutor viewing another tutor's profile
-     */
-    403: Error;
-    /**
      * Profile not found
      */
     404: Error;
@@ -1005,7 +997,7 @@ export type GetTutorsMeProfileResponses = {
     /**
      * Own tutor profile
      */
-    200: TutorProfile;
+    200: TutorMeProfile;
 };
 
 export type GetTutorsMeProfileResponse = GetTutorsMeProfileResponses[keyof GetTutorsMeProfileResponses];
@@ -1043,6 +1035,39 @@ export type PutTutorsMeProfileResponses = {
 
 export type PutTutorsMeProfileResponse = PutTutorsMeProfileResponses[keyof PutTutorsMeProfileResponses];
 
+export type PostTutorsMeSubscribeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/tutors/me/subscribe';
+};
+
+export type PostTutorsMeSubscribeErrors = {
+    /**
+     * Not authenticated
+     */
+    401: Error;
+    /**
+     * Tutors only
+     */
+    403: Error;
+    /**
+     * Profile not found
+     */
+    404: Error;
+};
+
+export type PostTutorsMeSubscribeError = PostTutorsMeSubscribeErrors[keyof PostTutorsMeSubscribeErrors];
+
+export type PostTutorsMeSubscribeResponses = {
+    /**
+     * Subscription activated
+     */
+    200: TutorMeProfile;
+};
+
+export type PostTutorsMeSubscribeResponse = PostTutorsMeSubscribeResponses[keyof PostTutorsMeSubscribeResponses];
+
 export type GetTutorsByIdDocumentsData = {
     body?: never;
     path: {
@@ -1057,10 +1082,6 @@ export type GetTutorsByIdDocumentsErrors = {
      * Not authenticated
      */
     401: Error;
-    /**
-     * Tutor viewing another tutor's profile
-     */
-    403: Error;
     /**
      * Profile not found
      */

@@ -17,6 +17,8 @@ interface TutorInvitationResponseActionsProps {
   getResponseAction: (invitationId: string) => "accept" | "decline" | undefined;
   onAcceptRequest: (invitationId: string) => void;
   onDeclineRequest: (invitationId: string) => void;
+  responseLimitReached?: boolean;
+  onSubscribeRequest?: () => void;
   size?: "sm" | "default";
 }
 
@@ -28,6 +30,8 @@ export function TutorInvitationResponseActions({
   getResponseAction,
   onAcceptRequest,
   onDeclineRequest,
+  responseLimitReached = false,
+  onSubscribeRequest,
   size = "sm",
 }: TutorInvitationResponseActionsProps) {
   const canRespond = canRespondToInvitation(invitationStatus, caseStatus);
@@ -44,6 +48,21 @@ export function TutorInvitationResponseActions({
   if (blockedReason) {
     return (
       <p className={cn(textOverflow.statusMessage, "max-w-xs text-right")}>{blockedReason}</p>
+    );
+  }
+
+  if (responseLimitReached) {
+    return (
+      <div className="flex max-w-xs flex-col items-end gap-2">
+        <p className={cn(textOverflow.statusMessage, "text-right")}>
+          Free response limit reached. Subscribe to accept or decline.
+        </p>
+        {onSubscribeRequest && (
+          <Button size={size} onClick={onSubscribeRequest}>
+            Subscribe
+          </Button>
+        )}
+      </div>
     );
   }
 

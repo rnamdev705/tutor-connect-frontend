@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteCasesByIdData, DeleteCasesByIdErrors, DeleteCasesByIdInvitationsByTutorIdData, DeleteCasesByIdInvitationsByTutorIdErrors, DeleteCasesByIdInvitationsByTutorIdResponses, DeleteCasesByIdResponses, DeleteDocumentsByIdData, DeleteDocumentsByIdErrors, DeleteDocumentsByIdResponses, GetAuthMeData, GetAuthMeErrors, GetAuthMeResponses, GetCasesByCaseIdDocumentsData, GetCasesByCaseIdDocumentsErrors, GetCasesByCaseIdDocumentsResponses, GetCasesByIdData, GetCasesByIdErrors, GetCasesByIdResponses, GetCasesData, GetCasesErrors, GetCasesResponses, GetDocumentsByIdDownloadData, GetDocumentsByIdDownloadErrors, GetDocumentsByIdDownloadResponses, GetHealthData, GetHealthReadyData, GetHealthReadyErrors, GetHealthReadyResponses, GetHealthResponses, GetInvitationsData, GetInvitationsErrors, GetInvitationsResponses, GetTutorsByIdData, GetTutorsByIdDocumentsData, GetTutorsByIdDocumentsErrors, GetTutorsByIdDocumentsResponses, GetTutorsByIdErrors, GetTutorsByIdResponses, GetTutorsData, GetTutorsErrors, GetTutorsMeProfileData, GetTutorsMeProfileErrors, GetTutorsMeProfileResponses, GetTutorsResponses, PatchAuthMeData, PatchAuthMeErrors, PatchAuthMeResponses, PatchCasesByIdData, PatchCasesByIdErrors, PatchCasesByIdResponses, PatchInvitationsByIdData, PatchInvitationsByIdErrors, PatchInvitationsByIdResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostCasesByCaseIdDocumentsData, PostCasesByCaseIdDocumentsErrors, PostCasesByCaseIdDocumentsResponses, PostCasesByIdInvitationsData, PostCasesByIdInvitationsErrors, PostCasesByIdInvitationsResponses, PostCasesData, PostCasesErrors, PostCasesResponses, PostTutorsMeProfileDocumentsData, PostTutorsMeProfileDocumentsErrors, PostTutorsMeProfileDocumentsResponses, PutTutorsMeProfileData, PutTutorsMeProfileErrors, PutTutorsMeProfileResponses } from './types.gen';
+import type { DeleteCasesByIdData, DeleteCasesByIdErrors, DeleteCasesByIdInvitationsByTutorIdData, DeleteCasesByIdInvitationsByTutorIdErrors, DeleteCasesByIdInvitationsByTutorIdResponses, DeleteCasesByIdResponses, DeleteDocumentsByIdData, DeleteDocumentsByIdErrors, DeleteDocumentsByIdResponses, GetAuthMeData, GetAuthMeErrors, GetAuthMeResponses, GetCasesByCaseIdDocumentsData, GetCasesByCaseIdDocumentsErrors, GetCasesByCaseIdDocumentsResponses, GetCasesByIdData, GetCasesByIdErrors, GetCasesByIdResponses, GetCasesData, GetCasesErrors, GetCasesResponses, GetDocumentsByIdDownloadData, GetDocumentsByIdDownloadErrors, GetDocumentsByIdDownloadResponses, GetHealthData, GetHealthReadyData, GetHealthReadyErrors, GetHealthReadyResponses, GetHealthResponses, GetInvitationsData, GetInvitationsErrors, GetInvitationsResponses, GetTutorsByIdData, GetTutorsByIdDocumentsData, GetTutorsByIdDocumentsErrors, GetTutorsByIdDocumentsResponses, GetTutorsByIdErrors, GetTutorsByIdResponses, GetTutorsData, GetTutorsErrors, GetTutorsMeProfileData, GetTutorsMeProfileErrors, GetTutorsMeProfileResponses, GetTutorsResponses, PatchAuthMeData, PatchAuthMeErrors, PatchAuthMeResponses, PatchCasesByIdData, PatchCasesByIdErrors, PatchCasesByIdResponses, PatchInvitationsByIdData, PatchInvitationsByIdErrors, PatchInvitationsByIdResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostCasesByCaseIdDocumentsData, PostCasesByCaseIdDocumentsErrors, PostCasesByCaseIdDocumentsResponses, PostCasesByIdInvitationsData, PostCasesByIdInvitationsErrors, PostCasesByIdInvitationsResponses, PostCasesData, PostCasesErrors, PostCasesResponses, PostTutorsMeProfileDocumentsData, PostTutorsMeProfileDocumentsErrors, PostTutorsMeProfileDocumentsResponses, PostTutorsMeSubscribeData, PostTutorsMeSubscribeErrors, PostTutorsMeSubscribeResponses, PutTutorsMeProfileData, PutTutorsMeProfileErrors, PutTutorsMeProfileResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -186,7 +186,7 @@ export const getCasesByCaseIdDocuments = <ThrowOnError extends boolean = false>(
 /**
  * Upload document
  *
- * Uploads a document and attaches it to a tuition case. The file is sent as multipart form data with the field name `file`. Allowed types are PDF, DOCX, PNG, and JPG. Maximum file size is controlled by MAX_FILE_SIZE_MB (default 10 MB). The caller must have access to the case.
+ * Uploads a document and attaches it to a tuition case. The file is sent as multipart form data with the field name `file`. Allowed types are PDF, DOCX, PNG, and JPG. Maximum file size is controlled by MAX_FILE_SIZE_MB (default 10 MB). Only the parent who owns the case may upload.
  */
 export const postCasesByCaseIdDocuments = <ThrowOnError extends boolean = false>(options: Options<PostCasesByCaseIdDocumentsData, ThrowOnError>): RequestResult<PostCasesByCaseIdDocumentsResponses, PostCasesByCaseIdDocumentsErrors, ThrowOnError> => (options.client ?? client).post<PostCasesByCaseIdDocumentsResponses, PostCasesByCaseIdDocumentsErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -213,7 +213,7 @@ export const getDocumentsByIdDownload = <ThrowOnError extends boolean = false>(o
 /**
  * Delete document
  *
- * Deletes a document. Allowed for the uploader, the case owner, or the profile owner.
+ * Deletes a document. Case documents: parent case owner only. Profile documents: tutor profile owner only.
  */
 export const deleteDocumentsById = <ThrowOnError extends boolean = false>(options: Options<DeleteDocumentsByIdData, ThrowOnError>): RequestResult<DeleteDocumentsByIdResponses, DeleteDocumentsByIdErrors, ThrowOnError> => (options.client ?? client).delete<DeleteDocumentsByIdResponses, DeleteDocumentsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -307,6 +307,17 @@ export const putTutorsMeProfile = <ThrowOnError extends boolean = false>(options
         'Content-Type': 'application/json',
         ...options?.headers
     }
+});
+
+/**
+ * Subscribe (demo)
+ *
+ * Activates unlimited case responses for the logged-in tutor. Demo-only — no real payment processing.
+ */
+export const postTutorsMeSubscribe = <ThrowOnError extends boolean = false>(options?: Options<PostTutorsMeSubscribeData, ThrowOnError>): RequestResult<PostTutorsMeSubscribeResponses, PostTutorsMeSubscribeErrors, ThrowOnError> => (options?.client ?? client).post<PostTutorsMeSubscribeResponses, PostTutorsMeSubscribeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/tutors/me/subscribe',
+    ...options
 });
 
 /**

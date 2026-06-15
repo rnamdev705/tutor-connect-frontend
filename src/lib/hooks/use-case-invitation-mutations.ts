@@ -37,7 +37,8 @@ export function useCaseInvitationMutations(caseId: string) {
         tutorProfileId != null &&
         previous?.invitations.some(
           (inv) =>
-            inv.tutorProfileId === tutorProfileId && canReinviteTutor(inv.status),
+            inv.tutorProfileId === tutorProfileId &&
+            canReinviteTutor(inv.status, previous.status),
         );
 
       patchCaseDetail((current) =>

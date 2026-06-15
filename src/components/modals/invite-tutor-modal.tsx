@@ -37,6 +37,7 @@ export interface InvitedTutorInfo {
 interface InviteTutorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  caseStatus?: string;
   invitedTutors?: InvitedTutorInfo[];
   invitingTutorIds?: string[];
   onInvite?: (tutor: TutorProfileSummary) => void;
@@ -45,6 +46,7 @@ interface InviteTutorModalProps {
 export function InviteTutorModal({
   open,
   onOpenChange,
+  caseStatus = "open",
   invitedTutors = [],
   invitingTutorIds = [],
   onInvite,
@@ -158,7 +160,7 @@ export function InviteTutorModal({
                   {isInviting ? (
                     <InvitePickerStatus isInviting />
                   ) : invitationStatus ? (
-                    <InvitePickerStatus status={invitationStatus} />
+                    <InvitePickerStatus status={invitationStatus} caseStatus={caseStatus} />
                   ) : null}
                 </button>
               );
@@ -178,7 +180,7 @@ export function InviteTutorModal({
               invitingTutorIds.includes(selected.id)
             }
           >
-            {selected && canReinviteTutor(invitedByTutorId.get(selected.id) ?? "")
+            {selected && canReinviteTutor(invitedByTutorId.get(selected.id) ?? "", caseStatus)
               ? "Re-send Invitation"
               : "Confirm Invitation"}
           </Button>

@@ -53,27 +53,51 @@ export function canRevokeInvitation(status: string): boolean {
 }
 
 /**
- * Pending and accepted invites block a new invite in picker modals.
- * Declined and superseded tutors may be re-invited on open cases.
+ * Pending, accepted, and superseded invites block a new invite in picker modals.
+ * Only tutors who declined on an open case may be re-invited.
  */
 export function blocksNewInviteForInvitationStatus(
   status: AppStatus | string | undefined,
 ): boolean {
-  return status === "pending" || status === "accepted";
+  return status === "pending" || status === "accepted" || status === "superseded";
 }
 
-/** Parent may send a fresh invite when the tutor previously declined or was superseded. */
-export function canReinviteTutor(status: AppStatus | string): boolean {
-  return status === "declined" || status === "superseded";
+/** Parent may re-invite only when the case is still open and the tutor previously declined. */
+export function canReinviteTutor(
+  invitationStatus: AppStatus | string,
+  caseStatus: string,
+): boolean {
+  return caseStatus === "open" && invitationStatus === "declined";
 }
 
-export function reinviteStatusHint(status: AppStatus | string): string | null {
-  if (status === "declined") {
+export function reinviteStatusHint(
+  invitationStatus: AppStatus | string,
+  caseStatus: string,
+): string | null {
+  if (canReinviteTutor(invitationStatus, caseStatus)) {
     return "Previously declined — you can invite again.";
   }
-  if (status === "superseded") {
-    return "Previously superseded — you can invite again.";
+  return null;
+}
+
+/** Context copy for non-actionable invitation rows on parent case views. */
+export function invitationHistoryHint(
+  invitationStatus: AppStatus | string,
+  caseStatus: string,
+): string | null {
+  const reinvite = reinviteStatusHint(invitationStatus, caseStatus);
+  if (reinvite) {
+    return reinvite;
   }
+
+  if (invitationStatus === "superseded" && caseStatus === "matched") {
+    return "Another tutor was matched for this case.";
+  }
+
+  if (invitationStatus === "superseded" && caseStatus === "closed") {
+    return "Case closed before this tutor responded.";
+  }
+
   return null;
 }
 
