@@ -2,54 +2,68 @@
 
 ## Overview
 
-TutorConnect is a role-based tutoring marketplace prototype. Parents create cases and invite tutors; tutors browse cases and manage invitations. The frontend uses **mock data** with a clear separation between UI, data access, and auth.
+TutorConnect is a role-based tutoring marketplace. Parents create cases and invite tutors; tutors manage invitations and profiles. The frontend is a **Next.js 16 App Router** app that talks to the **TutorConnect REST API** via an OpenAPI-generated client and **TanStack Query**.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Next.js App Router                   │
-├─────────────────────────────────────────────────────────┤
-│  Public routes          │  Protected routes (AppShell)   │
-│  /login, /register      │  /dashboard, /cases, …       │
-│  /docs, /unauthorized   │                                │
-├─────────────────────────────────────────────────────────┤
-│              AuthProvider (React Context)                  │
-│              localStorage session persistence            │
-├─────────────────────────────────────────────────────────┤
-│  lib/data.ts          │  lib/mock-data.ts               │
-│  (selectors/stats)    │  (seed data + formatters)       │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     Next.js App Router                            │
+├──────────────────────────────────────────────────────────────────┤
+│  proxy.ts (route guard)  │  AppShell (client auth guard)         │
+│  Public: /login, /docs   │  Protected: /dashboard, /cases, …    │
+├──────────────────────────────────────────────────────────────────┤
+│  AuthProvider + TanStack Query                                    │
+│  JWT in localStorage + cookie (tutorconnect-token)                │
+├──────────────────────────────────────────────────────────────────┤
+│  src/api/ (generated SDK)  →  tutorConnect-api REST API           │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ## Design decisions
 
 ### Server vs client components
 
-- **Server components** are used for detail pages that fetch data by ID (`/cases/[id]`, `/tutors/[id]`) and pass props to client views.
-- **Client components** (`"use client"`) wrap interactive UI: forms, modals, auth context, filters, and tables with actions.
+- **Route pages** are thin wrappers; `*View` client components own UI and data fetching.
+- **Detail pages** may prefetch on the server where useful; most list/detail data comes from React Query hooks calling the API.
 
 ### Feature-based folders
 
 Components are grouped by domain (`cases/`, `tutors/`, `profile/`) rather than by type. Shared primitives live in `common/` and `ui/`.
 
-### Data access layer
+### Server-side lists
 
-All mock lookups and stats are centralized in `src/lib/data.ts`. Views should not duplicate filter logic (e.g. `getCasesByOwnerId`, `getParentCaseStats`).
+List pages (cases, tutors, invitations) use **server-side pagination, search, and filters** via API query params. Search inputs are debounced (~300 ms) before hitting the API — see `components/common/list-filter-toolbar.tsx`.
 
-### Conditional rendering
+### Data access
 
-The app uses [`react-if`](https://www.npmjs.com/package/react-if) (`<If>`, `<Then>`, `<Else>`, `<When>`) for readable conditional UI instead of nested ternaries.
+- **Generated client:** `src/api/sdk.gen.ts`, `types.gen.ts`, `@tanstack/react-query.gen.ts`
+- **Query helpers:** `lib/queries/list-queries.ts`, `invalidate.ts`, `query-keys.ts`
+- **Mutations:** shared hooks like `useCaseInvitationMutations`, pending-action hooks for optimistic UX
+
+Do **not** hand-edit `*.gen.ts` files — regenerate with `npm run generate:api`.
+
+### Route protection (Next.js 16)
+
+`src/proxy.ts` replaces the deprecated `middleware.ts`. It checks the `tutorconnect-token` cookie and redirects unauthenticated users from protected routes. `AppShell` provides a second client-side guard after hydration.
+
+### Error handling
+
+`lib/api-error.ts` sanitizes API errors before showing them in toasts — internal Prisma/DB messages are never shown to users.
 
 ### UI system
 
 - **shadcn/ui** primitives in `components/ui/`
 - **Tailwind CSS v4** for styling
-- Shared patterns: `EmptyState`, `ErrorState`, `StatusBadge`, `SearchInput`, `PageHeader`
+- Shared patterns: `EmptyState`, `ErrorState`, `StatusBadge`, `PageHeader`, `ListFilterToolbar`
 
 ## Role model
 
 | Role | Capabilities |
 |------|--------------|
 | **Parent** | Create/edit cases, invite tutors, upload case documents, browse tutor directory |
-| **Tutor** | Browse cases, view invitations, accept invites, manage profile documents |
+| **Tutor** | View invited cases, accept/decline invitations, manage profile (gated until complete) |
 
-Access is enforced in the UI via `useAuth()` and role checks (e.g. `canManage` on case detail, `showInvite` on tutor profile).
+Access is enforced via proxy + AppShell, API authorization, and UI role checks (e.g. `canManage` on case detail).
+
+## Tutor profile gate
+
+Incomplete tutor profiles are redirected to `/profile/edit` by `TutorProfileGate` — tutors must fill qualifications, subjects, and background before using the main app.
