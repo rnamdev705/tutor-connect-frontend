@@ -1,7 +1,13 @@
 import type { User as ApiUser } from "@/api/types.gen";
-import type { User } from "@/lib/types";
 
-export function mapApiUser(apiUser: ApiUser): User {
+export type AppUser = {
+  id: string;
+  email: string;
+  role: ApiUser["role"];
+  name: string;
+};
+
+export function mapApiUser(apiUser: ApiUser): AppUser {
   return {
     id: apiUser.id,
     email: apiUser.email,

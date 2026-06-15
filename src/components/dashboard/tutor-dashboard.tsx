@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Mail, Pencil } from "lucide-react";
-import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,13 +14,29 @@ import { StatCard } from "@/components/common/stat-card";
 import { ErrorState } from "@/components/common/error-state";
 import { DashboardContentSkeleton } from "@/components/common/content-skeletons";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
+import { getTutorsByIdDocumentsOptions } from "@/api/@tanstack/react-query.gen";
+import {
+  invitationsCountQueryOptions,
+} from "@/lib/queries/list-queries";
 
 export function TutorDashboard() {
   const { tutor, isLoading: tutorLoading, isError: tutorError } = useCurrentTutor();
 
-  const { data, isLoading: invitationsLoading } = useQuery({
-    ...allInvitationsListQueryOptions,
+  const { data: totalInvites, isLoading: totalLoading } = useQuery({
+    ...invitationsCountQueryOptions(),
     enabled: !!tutor,
+  });
+  const { data: pendingInvites, isLoading: pendingLoading } = useQuery({
+    ...invitationsCountQueryOptions("pending"),
+    enabled: !!tutor,
+  });
+  const { data: acceptedInvites, isLoading: acceptedLoading } = useQuery({
+    ...invitationsCountQueryOptions("accepted"),
+    enabled: !!tutor,
+  });
+  const { data: documentsData, isLoading: documentsLoading } = useQuery({
+    ...getTutorsByIdDocumentsOptions({ path: { id: tutor?.id ?? "" } }),
+    enabled: !!tutor?.id,
   });
 
   if (tutorLoading) {
@@ -49,12 +64,12 @@ export function TutorDashboard() {
     );
   }
 
-  const invitations = data?.data ?? [];
+  const statsLoading = totalLoading || pendingLoading || acceptedLoading || documentsLoading;
   const stats = {
-    invited: invitations.length,
-    pending: invitations.filter((i) => i.status === "pending").length,
-    accepted: invitations.filter((i) => i.status === "accepted").length,
-    documents: 0,
+    invited: totalInvites?.meta.total ?? 0,
+    pending: pendingInvites?.meta.total ?? 0,
+    accepted: acceptedInvites?.meta.total ?? 0,
+    documents: documentsData?.data.length ?? 0,
   };
 
   return (
@@ -68,36 +83,36 @@ export function TutorDashboard() {
         </p>
       </div>
 
-      {invitationsLoading ? (
+      {statsLoading ? (
         <DashboardContentSkeleton />
       ) : (
         <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Invited Cases" value={stats.invited} icon={Mail} />
-        <StatCard title="Pending Invitations" value={stats.pending} icon={Mail} />
-        <StatCard title="Accepted Invitations" value={stats.accepted} icon={Mail} />
-        <StatCard title="Uploaded Documents" value={stats.documents} icon={FileText} />
-      </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Invited Cases" value={stats.invited} icon={Mail} />
+            <StatCard title="Pending Invitations" value={stats.pending} icon={Mail} />
+            <StatCard title="Accepted Invitations" value={stats.accepted} icon={Mail} />
+            <StatCard title="Uploaded Documents" value={stats.documents} icon={FileText} />
+          </div>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button variant="outline" asChild>
-            <Link href="/invitations">
-              <Mail className="mr-2 h-4 w-4" />
-              View Invited Cases
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/profile/edit">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              <Button variant="outline" asChild>
+                <Link href="/invitations">
+                  <Mail className="mr-2 h-4 w-4" />
+                  View Invited Cases
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/profile/edit">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

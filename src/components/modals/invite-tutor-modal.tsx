@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { If, Then, Else } from "react-if";
 import { Loader2, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,13 +16,13 @@ import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { StatusBadge } from "@/components/common/status-badge";
-import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
+import { InvitingStatusCell } from "@/components/common/pending-status-cells";
+import { useDebouncedValue } from "@/components/common/list-filter-toolbar";
 import {
   getExperienceSummary,
   getQualificationSummary,
 } from "@/lib/format";
-import { matchesTutorSearch } from "@/lib/pagination";
-import { allTutorsListQueryOptions } from "@/lib/queries/list-queries";
+import { tutorsSearchQueryOptions } from "@/lib/queries/list-queries";
 import type { TutorProfileSummary } from "@/api/types.gen";
 import type { AppStatus } from "@/components/common/status-badge";
 
@@ -49,16 +48,17 @@ export function InviteTutorModal({
 }: InviteTutorModalProps) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<TutorProfileSummary | null>(null);
+  const debouncedSearch = useDebouncedValue(search);
 
-  const { data, isLoading } = useQuery({
-    ...allTutorsListQueryOptions,
-    enabled: open,
-  });
-
-  const tutors = useMemo(
-    () => (data?.data ?? []).filter((tutor) => matchesTutorSearch(tutor, search)),
-    [data?.data, search],
+  const queryOptions = useMemo(
+    () => ({
+      ...tutorsSearchQueryOptions(debouncedSearch, open),
+    }),
+    [debouncedSearch, open],
   );
+
+  const { data, isLoading } = useQuery(queryOptions);
+  const tutors = data?.data ?? [];
 
   const invitedByTutorId = new Map(
     invitedTutors.map((entry) => [entry.tutorProfileId, entry.status]),
@@ -106,59 +106,54 @@ export function InviteTutorModal({
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          ) : tutors.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No tutors found"
+              description="No tutors match your search. Try a different name or subject."
+              variant="compact"
+            />
           ) : (
-            <If condition={tutors.length === 0}>
-              <Then>
-                <EmptyState
-                  icon={Users}
-                  title="No tutors found"
-                  description="No tutors match your search. Try a different name or subject."
-                  variant="compact"
-                />
-              </Then>
-              <Else>
-                {tutors.map((tutor) => {
-                  const invitationStatus = invitedByTutorId.get(tutor.id);
-                  const isInviting = invitingTutorIds.includes(tutor.id);
-                  const isDisabled = !!invitationStatus || isInviting;
-                  const isSelected = selected?.id === tutor.id && !isDisabled;
+            tutors.map((tutor) => {
+              const invitationStatus = invitedByTutorId.get(tutor.id);
+              const isInviting = invitingTutorIds.includes(tutor.id);
+              const isDisabled = !!invitationStatus || isInviting;
+              const isSelected = selected?.id === tutor.id && !isDisabled;
 
-                  return (
-                    <button
-                      key={tutor.id}
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={() => {
-                        if (!isDisabled) setSelected(tutor);
-                      }}
-                      className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
-                        isDisabled
-                          ? "cursor-not-allowed border-muted bg-muted/30 opacity-70"
-                          : isSelected
-                            ? "border-primary bg-primary/5"
-                            : "hover:bg-muted/50"
-                      }`}
-                    >
-                      <UserAvatar name={tutor.displayName} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{tutor.displayName}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {getQualificationSummary(tutor)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {getExperienceSummary(tutor)}
-                        </p>
-                      </div>
-                      {isInviting ? (
-                        <InvitingStatusCell />
-                      ) : invitationStatus ? (
-                        <StatusBadge status={invitationStatus} />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </Else>
-            </If>
+              return (
+                <button
+                  key={tutor.id}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (!isDisabled) setSelected(tutor);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
+                    isDisabled
+                      ? "cursor-not-allowed border-muted bg-muted/30 opacity-70"
+                      : isSelected
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted/50"
+                  }`}
+                >
+                  <UserAvatar name={tutor.displayName} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{tutor.displayName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {getQualificationSummary(tutor)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {getExperienceSummary(tutor)}
+                    </p>
+                  </div>
+                  {isInviting ? (
+                    <InvitingStatusCell />
+                  ) : invitationStatus ? (
+                    <StatusBadge status={invitationStatus} />
+                  ) : null}
+                </button>
+              );
+            })
           )}
         </div>
 

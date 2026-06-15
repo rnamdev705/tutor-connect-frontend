@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { TutorCard } from "@/components/tutors/tutor-card";
-import { mockTutors } from "@/lib/mock-data";
+import { mockTutors } from "@/stories/fixtures/mock-data";
 import type { TutorProfileSummary } from "@/api/types.gen";
 
 function toSummary(tutor: (typeof mockTutors)[0]): TutorProfileSummary {
   return {
     id: tutor.id,
-    tutorId: tutor.userId,
+    tutorId: tutor.tutorId,
     displayName: tutor.displayName,
     qualifications: tutor.qualifications,
     experiences: [],

@@ -3,14 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { If, Then, Else } from "react-if";
 import { ArrowLeft, Eye, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
-import {
-  deleteCasesByIdInvitationsByTutorIdMutation,
-  getCasesByIdQueryKey,
-  postCasesByIdInvitationsMutation,
-} from "@/api/@tanstack/react-query.gen";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,17 +35,17 @@ import { InvitedTutorListSkeleton } from "@/components/common/content-skeletons"
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { InviteTutorModal } from "@/components/modals/invite-tutor-modal";
-import { InvitingStatusCell, RemovingStatusCell } from "@/components/documents/pending-document-rows";
+import {
+  InvitingStatusCell,
+  RemovingStatusCell,
+} from "@/components/common/pending-status-cells";
 import { useAuth } from "@/lib/auth-context";
-import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDate } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@/lib/pagination";
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
-import { invalidateAllCasesList } from "@/lib/queries/invalidate";
+import { useCaseInvitationMutations } from "@/lib/hooks/use-case-invitation-mutations";
 import { usePendingTutorInvites } from "@/lib/hooks/use-pending-invites";
 import { usePendingInvitationRevokes } from "@/lib/hooks/use-pending-invitation-revokes";
-import { toast } from "sonner";
-import type { CaseDetail } from "@/api/types.gen";
 
 interface CaseInvitedTutorsViewProps {
   caseId: string;
@@ -59,7 +54,6 @@ interface CaseInvitedTutorsViewProps {
 export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -67,89 +61,15 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
   const { pendingInvites, trackInvite } = usePendingTutorInvites(caseId);
   const { trackRevoke, isRevoking, hasPending: hasPendingRevokes } =
     usePendingInvitationRevokes(caseId);
+  const { inviteMutation, revokeMutation } = useCaseInvitationMutations(caseId);
 
-  const { data: caseData, isLoading, isError } = useQuery(
-    caseDetailQueryOptions(caseId),
-  );
-
-  const inviteMutation = useMutation({
-    ...postCasesByIdInvitationsMutation(),
-    onSuccess: (invitation, variables) => {
-      const tutorProfileId = variables.body?.tutorProfileId;
-
-      queryClient.setQueryData(
-        getCasesByIdQueryKey({ path: { id: caseId } }),
-        (old: CaseDetail | undefined) => {
-          if (!old) return old;
-
-          if (
-            old.invitations.some(
-              (item) =>
-                item.id === invitation.id ||
-                (tutorProfileId && item.tutorProfileId === tutorProfileId),
-            )
-          ) {
-            return old;
-          }
-
-          return {
-            ...old,
-            invitedCount: old.invitedCount + 1,
-            invitedTutorIds:
-              tutorProfileId && !old.invitedTutorIds.includes(tutorProfileId)
-                ? [...old.invitedTutorIds, tutorProfileId]
-                : old.invitedTutorIds,
-            invitations: [{ ...invitation, caseId }, ...old.invitations],
-          };
-        },
-      );
-
-      void invalidateAllCasesList(queryClient);
-      toast.success("Tutor invited successfully");
-    },
-    onError: (error) => toast.error(getApiErrorMessage(error)),
-  });
-
-  const revokeMutation = useMutation({
-    ...deleteCasesByIdInvitationsByTutorIdMutation(),
-    onSuccess: (_, variables) => {
-      const tutorUserId = variables.path.tutorId;
-
-      queryClient.setQueryData(
-        getCasesByIdQueryKey({ path: { id: caseId } }),
-        (old: CaseDetail | undefined) => {
-          if (!old) return old;
-
-          const removed = old.invitations.find(
-            (inv) => inv.tutorUserId === tutorUserId,
-          );
-
-          return {
-            ...old,
-            invitedCount: Math.max(0, old.invitedCount - 1),
-            invitedTutorIds: removed?.tutorProfileId
-              ? old.invitedTutorIds.filter((id) => id !== removed.tutorProfileId)
-              : old.invitedTutorIds,
-            invitations: old.invitations.filter(
-              (inv) => inv.tutorUserId !== tutorUserId,
-            ),
-          };
-        },
-      );
-
-      void invalidateAllCasesList(queryClient);
-      toast.success("Invitation removed");
-    },
-    onError: (error) => toast.error(getApiErrorMessage(error)),
-  });
+  const { data: caseData, isLoading, isError } = useQuery(caseDetailQueryOptions(caseId));
 
   const activePendingInvites = useMemo(() => {
     if (!caseData) return [];
     return pendingInvites.filter(
       (pending) =>
-        !caseData.invitations.some(
-          (inv) => inv.tutorProfileId === pending.tutorProfileId,
-        ),
+        !caseData.invitations.some((inv) => inv.tutorProfileId === pending.tutorProfileId),
     );
   }, [caseData, pendingInvites]);
 
@@ -321,9 +241,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
             <Else>
               <ul className="divide-y rounded-lg border">
                 {pagination.items.map((row) => {
-                  const revoking = row.tutorUserId
-                    ? isRevoking(row.tutorUserId)
-                    : false;
+                  const revoking = row.tutorUserId ? isRevoking(row.tutorUserId) : false;
                   const tutorInvitePending = row.kind === "pending";
 
                   return (
@@ -359,9 +277,7 @@ export function CaseInvitedTutorsView({ caseId }: CaseInvitedTutorsViewProps) {
                           <DropdownMenuContent align="end">
                             {row.tutorProfileId && (
                               <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/tutors/${row.tutorProfileId}`)
-                                }
+                                onClick={() => router.push(`/tutors/${row.tutorProfileId}`)}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Profile

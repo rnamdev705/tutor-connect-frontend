@@ -95,11 +95,6 @@ export function LoginForm() {
             )}
           </div>
 
-          <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-            Demo: <span className="font-medium">sarah@example.com</span> or{" "}
-            <span className="font-medium">james@example.com</span> · Password:{" "}
-            <span className="font-medium">Password1</span>
-          </p>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isSubmitting}>

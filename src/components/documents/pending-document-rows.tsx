@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DeletingStatusCell } from "@/components/common/pending-status-cells";
 import { formatFileSize } from "@/lib/format";
 import type { PendingDocumentUpload } from "@/lib/hooks/use-pending-document-uploads";
 
@@ -15,10 +15,7 @@ export function PendingCaseDocumentRow({ upload }: { upload: PendingDocumentUplo
       </TableCell>
       <TableCell className="text-muted-foreground">—</TableCell>
       <TableCell>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Uploading...
-        </span>
+        <DeletingStatusCell />
       </TableCell>
       <TableCell />
     </TableRow>
@@ -33,57 +30,9 @@ export function PendingTutorDocumentRow({ upload }: { upload: PendingDocumentUpl
         {formatFileSize(upload.sizeBytes)}
       </TableCell>
       <TableCell>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Uploading...
-        </span>
+        <DeletingStatusCell />
       </TableCell>
       <TableCell />
     </TableRow>
-  );
-}
-
-export function DeletingStatusCell() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Deleting...
-    </span>
-  );
-}
-
-export function InvitingStatusCell() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Inviting...
-    </span>
-  );
-}
-
-export function RemovingStatusCell() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Removing...
-    </span>
-  );
-}
-
-export function AcceptingStatusCell() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Accepting...
-    </span>
-  );
-}
-
-export function MatchingStatusCell() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Matching...
-    </span>
   );
 }

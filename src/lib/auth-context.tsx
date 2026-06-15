@@ -9,9 +9,8 @@ import {
 } from "@/api/@tanstack/react-query.gen";
 import { getAuthToken, setAuthToken } from "@/api/setup";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { mapApiUser } from "@/lib/mappers";
+import { mapApiUser, type AppUser } from "@/lib/app-user";
 import type { RegisterInput } from "@/lib/validations/auth";
-import type { User } from "@/lib/types";
 import {
   useMutation,
   useQuery,
@@ -28,7 +27,7 @@ import {
 } from "react";
 
 interface AuthContextValue {
-  user: User | null;
+  user: AppUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;

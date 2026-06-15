@@ -34,7 +34,8 @@ import {
 } from "@/components/common/content-skeletons";
 import { ErrorState } from "@/components/common/error-state";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
-import { PendingTutorDocumentRow, DeletingStatusCell } from "@/components/documents/pending-document-rows";
+import { PendingTutorDocumentRow } from "@/components/documents/pending-document-rows";
+import { DeletingStatusCell } from "@/components/common/pending-status-cells";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { useCurrentTutor } from "@/lib/hooks/use-current-tutor";
 import { usePendingDocumentUploads } from "@/lib/hooks/use-pending-document-uploads";

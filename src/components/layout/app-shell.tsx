@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { syncAuthCookieFromStorage } from "@/api/setup";
 import { useAuth } from "@/lib/auth-context";
 import { AppSidebar } from "./app-sidebar";
 import { AppTopNav } from "./app-top-nav";
@@ -13,6 +14,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    syncAuthCookieFromStorage();
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !user) {

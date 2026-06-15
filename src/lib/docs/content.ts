@@ -1,6 +1,5 @@
 /**
  * Structured documentation content for the `/docs` page.
- * Markdown copies live in the repo `docs/` folder for offline/GitHub review.
  */
 
 export interface DocSection {
@@ -18,7 +17,7 @@ export const DOC_SECTIONS: DocSection[] = [
     content: [
       "TutorConnect is a role-based tutoring marketplace built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and shadcn/ui.",
       "Parents create tutoring cases, invite tutors, and upload documents. Tutors manage invitations and maintain a profile.",
-      "This prototype uses mock data in lib/mock-data.ts with selectors in lib/data.ts. Auth is client-side via React Context and localStorage.",
+      "The frontend talks to a REST API via an OpenAPI-generated client (src/api/). TanStack Query handles caching, pagination, and mutations.",
     ],
   },
   {
@@ -27,9 +26,9 @@ export const DOC_SECTIONS: DocSection[] = [
     description: "Layers, patterns, and folder structure",
     content: [
       "Feature-based components: cases/, tutors/, profile/, dashboard/, auth/, layout/, modals/, common/.",
-      "Server components on detail routes (/cases/[id], /tutors/[id]) fetch data and pass props to client views.",
-      "Client components handle forms, modals, filters, and auth. AppShell protects all (app) routes.",
-      "Conditional UI uses react-if (<If>, <Then>, <Else>, <When>) for readable branching.",
+      "Route pages are thin wrappers; *View components own UI and data fetching.",
+      "lib/queries/list-queries.ts — shared React Query options with server-side pagination.",
+      "lib/hooks/ — pending-action hooks for optimistic UX (invites, uploads, deletes).",
       "Shared UI: EmptyState, ErrorState, StatusBadge, SearchInput, PageHeader, StatCard.",
     ],
   },
@@ -38,8 +37,8 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "Routing",
     description: "Public vs protected routes",
     content: [
-      "Public: /login, /register, /docs, /unauthorized, 404.",
-      "Protected (AppShell): /dashboard, /cases, /cases/new, /cases/[id], /cases/[id]/edit, /tutors, /tutors/[id], /invitations, /profile, /profile/edit.",
+      "Public: /login, /register, /docs, /unauthorized.",
+      "Protected (middleware + AppShell): /dashboard, /cases, /tutors, /invitations, /profile.",
       "Parent nav: Dashboard, My Cases, Tutor Directory, Profile.",
       "Tutor nav: Dashboard, Invited Cases, My Profile.",
     ],
@@ -49,9 +48,9 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "Components",
     description: "Key views and shared primitives",
     content: [
-      "Cases: CasesListView, CaseDetailView, CaseFormView, InvitedCasesView, CasesTable.",
+      "Cases: CasesListView, CaseDetailView (+ section cards), CaseFormView, InvitedCasesView.",
       "Tutors: TutorsDirectoryView, TutorCard, TutorProfileDetailView.",
-      "Profile: ProfilePageView → ParentProfileView | TutorProfileView, ProfileEditView.",
+      "Profile: ProfilePageView, ProfileEditView, TutorProfileGate.",
       "Modals: InviteTutorModal, UploadDocumentModal, DeleteConfirmationModal.",
       "Auth: LoginForm, RegisterForm (Zod + react-hook-form).",
     ],
@@ -62,45 +61,45 @@ export const DOC_SECTIONS: DocSection[] = [
     description: "Session, validation, and role checks",
     content: [
       "AuthProvider (lib/auth-context.tsx) exposes useAuth(): user, login, register, logout.",
-      "auth-store.ts validates credentials; demo users + localStorage registrations.",
-      "AppShell redirects unauthenticated users to /login.",
-      "Feature gates: canManage (parent + case owner), showInvite (parent on tutor profile), useCurrentTutor() for tutor flows.",
-      "Register validation: Zod schema in lib/validations/auth.ts (password strength, email, role).",
+      "JWT stored in localStorage; mirrored to a cookie for Next.js middleware route protection.",
+      "AppShell redirects unauthenticated users; middleware guards protected routes on first load.",
+      "api-error.ts sanitizes internal server errors before showing them in the UI.",
+      "Register validation: Zod schema in lib/validations/auth.ts.",
     ],
   },
   {
     id: "data",
     title: "Data layer",
-    description: "Mock data, selectors, and hooks",
+    description: "API client, queries, and cache",
     content: [
-      "lib/data.ts: getCaseById, getTutorByUserId, getCasesByOwnerId, getParentCaseStats, getInvitationsForTutor, getTutorDashboardStats.",
-      "lib/types.ts: User, Case, TutorProfile, CaseInvitation, Document, CaseStatus.",
-      "useCurrentTutor() links authenticated tutor user to TutorProfile via userId.",
-      "Upload limits in lib/constants.ts: PDF/DOC/DOCX/PNG/JPEG, max 10MB — enforced in UploadDocumentModal.",
+      "Generated types and SDK: src/api/types.gen.ts, sdk.gen.ts, @tanstack/react-query.gen.ts.",
+      "List endpoints use server-side page, limit, search, and filter query params.",
+      "invalidate.ts — predicate-based cache invalidation by query key id.",
+      "useCaseInvitationMutations — shared invite/revoke logic for case detail views.",
+      "Upload limits in lib/constants.ts: PDF/DOCX/PNG/JPEG, max 10MB.",
     ],
   },
   {
     id: "getting-started",
     title: "Getting started",
-    description: "Run locally and demo accounts",
+    description: "Run locally",
     content: [
-      "cd tuition-marketplace && npm install && npm run dev",
-      "Open http://localhost:3000 — login required for app routes.",
-      "Documentation: http://localhost:3000/docs (this page).",
-      "Demo parent: sarah@example.com / Password1",
-      "Demo tutor: james@example.com / Password1",
-      "Full markdown docs: docs/ folder in the repository root.",
+      "Start API: cd tutorConnect-api && npm run dev",
+      "Start frontend: cd tuition-marketplace && npm install && npm run dev",
+      "Open http://localhost:3000 — register or log in to access the app.",
+      "API docs: http://localhost:3001/api-docs",
+      "Regenerate client after API changes: npm run generate:api",
     ],
   },
 ];
 
 export const TECH_STACK = [
-  { name: "Next.js 16", detail: "App Router, server + client components" },
-  { name: "React 19", detail: "UI library" },
-  { name: "TypeScript", detail: "Strict typing across lib/ and components/" },
+  { name: "Next.js 16", detail: "App Router, middleware, server/client components" },
+  { name: "React 19", detail: "UI with hooks and TanStack Query" },
+  { name: "TypeScript", detail: "Strict typing with OpenAPI-generated API types" },
+  { name: "TanStack Query v5", detail: "Server-side pagination, cache, mutations" },
   { name: "Tailwind CSS v4", detail: "Utility-first styling" },
   { name: "shadcn/ui", detail: "Accessible component primitives" },
   { name: "Zod + react-hook-form", detail: "Auth form validation" },
-  { name: "react-if", detail: "Declarative conditional rendering" },
-  { name: "sonner", detail: "Toast notifications" },
+  { name: "OpenAPI client", detail: "Generated SDK from tutorConnect-api spec" },
 ];

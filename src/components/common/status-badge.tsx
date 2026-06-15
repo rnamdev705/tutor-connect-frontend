@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import type { CaseInvitation, CaseStatus } from "@/lib/types";
+import type { Case, InvitationWithCase } from "@/api/types.gen";
 
-export type AppStatus = CaseStatus | CaseInvitation["status"];
+export type AppStatus = Case["status"] | InvitationWithCase["status"];
 
 const statusConfig: Record<
   AppStatus,

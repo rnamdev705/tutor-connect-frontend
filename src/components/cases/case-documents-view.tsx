@@ -42,8 +42,8 @@ import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import {
   PendingCaseDocumentRow,
-  DeletingStatusCell,
 } from "@/components/documents/pending-document-rows";
+import { DeletingStatusCell } from "@/components/common/pending-status-cells";
 import { DocumentRowActions } from "@/components/documents/document-row-actions";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";

@@ -10,14 +10,8 @@ import {
   invalidateCaseData,
   setInvitationInListCache,
 } from "@/lib/queries/invalidate";
+import { isQueryKey, queryKeyIds } from "@/lib/queries/query-keys";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -35,22 +29,25 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
 import { TableContentSkeleton } from "@/components/common/content-skeletons";
-import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PaginationControls } from "@/components/common/pagination-controls";
-import { TruncatedListNotice } from "@/components/common/truncated-list-notice";
-import { useAuth } from "@/lib/auth-context";
-import { getApiErrorMessage } from "@/lib/api-error";
-import { formatCurrency, formatDate } from "@/lib/format";
-import { DEFAULT_PAGE_SIZE, matchesText, paginateItems } from "@/lib/pagination";
-import { allInvitationsListQueryOptions } from "@/lib/queries/list-queries";
-import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
+import {
+  FilterSelect,
+  ListFilterToolbar,
+  useDebouncedValue,
+} from "@/components/common/list-filter-toolbar";
 import {
   AcceptingStatusCell,
   MatchingStatusCell,
-} from "@/components/documents/pending-document-rows";
+} from "@/components/common/pending-status-cells";
+import { useAuth } from "@/lib/auth-context";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { DEFAULT_PAGE_SIZE, resolvePaginationMeta } from "@/lib/pagination";
+import { invitationsListQueryOptions } from "@/lib/queries/list-queries";
+import { usePendingInvitationResponses } from "@/lib/hooks/use-pending-invitation-responses";
 import { toast } from "sonner";
 
 export function InvitedCasesView() {
@@ -59,18 +56,38 @@ export function InvitedCasesView() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
   const [invitationFilter, setInvitationFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(search);
 
   useEffect(() => {
     const initialSearch = searchParams.get("search");
-    if (initialSearch) {
-      setSearch(initialSearch);
-    }
+    if (initialSearch) setSearch(initialSearch);
   }, [searchParams]);
 
-  const { data, isLoading } = useQuery(allInvitationsListQueryOptions);
+  const queryOptions = useMemo(
+    () =>
+      invitationsListQueryOptions({
+        page,
+        limit: DEFAULT_PAGE_SIZE,
+        ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+        ...(invitationFilter !== "all"
+          ? {
+              status: invitationFilter as
+                | "pending"
+                | "accepted"
+                | "declined"
+                | "superseded",
+            }
+          : {}),
+      }),
+    [page, debouncedSearch, invitationFilter],
+  );
+
+  const { data, isLoading } = useQuery({
+    ...queryOptions,
+    enabled: user?.role === "tutor",
+  });
 
   const { trackResponse, isResponding, getResponseAction } =
     usePendingInvitationResponses();
@@ -79,11 +96,11 @@ export function InvitedCasesView() {
     ...patchInvitationsByIdMutation(),
     onMutate: async () => {
       await queryClient.cancelQueries({
-        queryKey: allInvitationsListQueryOptions.queryKey,
+        predicate: (query) => isQueryKey(query, queryKeyIds.invitations),
       });
-      const previous = queryClient.getQueryData<GetInvitationsResponse>(
-        allInvitationsListQueryOptions.queryKey,
-      );
+      const previous = queryClient.getQueriesData<GetInvitationsResponse>({
+        predicate: (query) => isQueryKey(query, queryKeyIds.invitations),
+      });
       return { previous };
     },
     onSuccess: (updated) => {
@@ -92,37 +109,19 @@ export function InvitedCasesView() {
       toast.success("Case invitation accepted");
     },
     onError: (error, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          allInvitationsListQueryOptions.queryKey,
-          context.previous,
-        );
-      }
+      context?.previous.forEach(([key, value]) => {
+        queryClient.setQueryData(key, value);
+      });
       toast.error(getApiErrorMessage(error));
     },
   });
 
-  const invitations = data?.data ?? [];
-
-  const filteredRows = useMemo(
-    () =>
-      invitations
-        .map((invitation) => ({ invitation, case: invitation.case }))
-        .filter(({ case: caseItem, invitation }) => {
-          if (!matchesText(caseItem.title, search)) return false;
-          if (status !== "all" && caseItem.status !== status) return false;
-          if (invitationFilter !== "all" && invitation.status !== invitationFilter) {
-            return false;
-          }
-          return true;
-        }),
-    [invitations, search, status, invitationFilter],
+  const rows = useMemo(
+    () => (data?.data ?? []).map((invitation) => ({ invitation, case: invitation.case })),
+    [data?.data],
   );
 
-  const pagination = useMemo(
-    () => paginateItems(filteredRows, page, DEFAULT_PAGE_SIZE),
-    [filteredRows, page],
-  );
+  const pagination = resolvePaginationMeta(data?.meta, page, DEFAULT_PAGE_SIZE);
 
   const handleAccept = (invitationId: string) => {
     trackResponse(invitationId, "accept", () =>
@@ -147,10 +146,7 @@ export function InvitedCasesView() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Invited Cases"
-          description="Cases you've been invited to tutor"
-        />
+        <PageHeader title="Invited Cases" description="Cases you've been invited to tutor" />
         <Card className="shadow-sm">
           <CardContent className="pt-6">
             <TableContentSkeleton />
@@ -165,64 +161,38 @@ export function InvitedCasesView() {
       <PageHeader
         title="Invited Cases"
         description="Cases you've been invited to tutor"
-        count={filteredRows.length}
+        count={pagination.total}
       />
-
-      <TruncatedListNotice count={invitations.length} />
 
       <Card className="shadow-sm">
         <CardContent className="pt-6">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <SearchInput
-              value={search}
-              onChange={(value) => {
-                setSearch(value);
+          <ListFilterToolbar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            searchPlaceholder="Search cases..."
+          >
+            <FilterSelect
+              value={invitationFilter}
+              onValueChange={(value) => {
+                setInvitationFilter(value);
                 setPage(1);
               }}
-              placeholder="Search cases..."
+              placeholder="Invitation"
+              className="w-full sm:w-44"
+              items={[
+                { value: "all", label: "All Invitations" },
+                { value: "pending", label: "Pending" },
+                { value: "accepted", label: "Accepted" },
+                { value: "declined", label: "Declined" },
+                { value: "superseded", label: "Superseded" },
+              ]}
             />
-            <Select
-              value={status}
-              onValueChange={(v) => {
-                if (v) {
-                  setStatus(v);
-                  setPage(1);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Case status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="matched">Matched</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={invitationFilter}
-              onValueChange={(v) => {
-                if (v) {
-                  setInvitationFilter(v);
-                  setPage(1);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="Invitation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Invitations</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-                <SelectItem value="superseded">Superseded</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          </ListFilterToolbar>
 
-          {pagination.items.length === 0 ? (
+          {rows.length === 0 ? (
             <EmptyState
               icon={Mail}
               title="No invited cases"
@@ -244,79 +214,72 @@ export function InvitedCasesView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagination.items.map(({ case: c, invitation }) => {
-                  const responding = isResponding(invitation.id);
+                {rows.map(({ case: c, invitation }) => {
                   const accepting =
-                    responding && getResponseAction(invitation.id) === "accept";
+                    isResponding(invitation.id) &&
+                    getResponseAction(invitation.id) === "accept";
 
                   return (
-                  <TableRow
-                    key={invitation.id}
-                    className={accepting ? "bg-muted/40" : undefined}
-                  >
-                    <TableCell className="font-medium">{c.title}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.subject}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.level}</TableCell>
-                    <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
-                    <TableCell>
-                      {accepting ? (
-                        <MatchingStatusCell />
-                      ) : (
-                        <StatusBadge status={c.status} />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {accepting ? (
-                        <AcceptingStatusCell />
-                      ) : (
-                        <StatusBadge status={invitation.status} />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(invitation.invitedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {invitation.status === "pending" && (
-                          accepting ? (
-                            <Button size="sm" disabled>
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                              Accepting...
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              disabled={responding}
-                              onClick={() => handleAccept(invitation.id)}
-                            >
-                              <Check className="mr-1.5 h-3.5 w-3.5" />
-                              Accept
-                            </Button>
-                          )
+                    <TableRow
+                      key={invitation.id}
+                      className={accepting ? "bg-muted/40" : undefined}
+                    >
+                      <TableCell className="font-medium">{c.title}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.subject}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.level}</TableCell>
+                      <TableCell>{formatCurrency(c.budgetPerHour)}/hr</TableCell>
+                      <TableCell>
+                        {accepting ? <MatchingStatusCell /> : <StatusBadge status={c.status} />}
+                      </TableCell>
+                      <TableCell>
+                        {accepting ? (
+                          <AcceptingStatusCell />
+                        ) : (
+                          <StatusBadge status={invitation.status} />
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              disabled={accepting}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => router.push(`/cases/${c.id}`)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Case
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(invitation.invitedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {invitation.status === "pending" &&
+                            (accepting ? (
+                              <Button size="sm" disabled>
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                Accepting...
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                disabled={isResponding(invitation.id)}
+                                onClick={() => handleAccept(invitation.id)}
+                              >
+                                <Check className="mr-1.5 h-3.5 w-3.5" />
+                                Accept
+                              </Button>
+                            ))}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={accepting}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/cases/${c.id}`)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Case
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
               </TableBody>

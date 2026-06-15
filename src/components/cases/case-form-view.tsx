@@ -39,7 +39,9 @@ import { enqueueCaseDocumentUploads } from "@/lib/hooks/use-pending-document-upl
 import { caseDetailQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS, MAX_FILE_SIZE_MB } from "@/lib/constants";
-import type { CaseStatus } from "@/lib/types";
+import type { Case } from "@/api/types.gen";
+
+type CaseStatus = Case["status"];
 import type { CaseDetail } from "@/api/types.gen";
 import { toast } from "sonner";
 

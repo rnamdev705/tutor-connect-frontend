@@ -4,18 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, Eye, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
-import {
-  deleteCasesByIdMutation,
-} from "@/api/@tanstack/react-query.gen";
+import { deleteCasesByIdMutation } from "@/api/@tanstack/react-query.gen";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -33,23 +24,25 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
 import { TableContentSkeleton } from "@/components/common/content-skeletons";
-import { SearchInput } from "@/components/common/search-input";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { DeleteConfirmationModal } from "@/components/modals/delete-confirmation-modal";
 import { PaginationControls } from "@/components/common/pagination-controls";
-import { DeletingStatusCell } from "@/components/documents/pending-document-rows";
+import { DeletingStatusCell } from "@/components/common/pending-status-cells";
+import {
+  FilterSelect,
+  ListFilterToolbar,
+  useDebouncedValue,
+} from "@/components/common/list-filter-toolbar";
 import { useAuth } from "@/lib/auth-context";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { usePendingCaseDeletes } from "@/lib/hooks/use-pending-case-deletes";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { TruncatedListNotice } from "@/components/common/truncated-list-notice";
 import {
   DEFAULT_PAGE_SIZE,
-  matchesText,
-  paginateItems,
+  resolvePaginationMeta,
 } from "@/lib/pagination";
-import { allCasesListQueryOptions } from "@/lib/queries/list-queries";
+import { casesListQueryOptions } from "@/lib/queries/list-queries";
 import { invalidateAllCasesList } from "@/lib/queries/invalidate";
 import { LEVELS, SUBJECTS } from "@/lib/constants";
 import type { Case } from "@/api/types.gen";
@@ -81,30 +74,30 @@ function CaseTableRow({
       </TableCell>
       <TableCell>
         {!isDeleting && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}`)}>
-              <Eye className="mr-2 h-4 w-4" />
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDelete(caseItem)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}`)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onNavigate(`/cases/${caseItem.id}/edit`)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onDelete(caseItem)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </TableCell>
     </TableRow>
@@ -124,13 +117,31 @@ export function CasesListView() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
   const { trackDelete, isDeleting, hasPending } = usePendingCaseDeletes();
+  const debouncedSearch = useDebouncedValue(search);
 
   useEffect(() => {
     const initialSearch = searchParams.get("search");
-    if (initialSearch) {
-      setSearch(initialSearch);
-    }
+    if (initialSearch) setSearch(initialSearch);
   }, [searchParams]);
+
+  const queryOptions = useMemo(
+    () =>
+      casesListQueryOptions({
+        page,
+        limit: DEFAULT_PAGE_SIZE,
+        ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+        ...(subject !== "all" ? { subject } : {}),
+        ...(level !== "all" ? { level } : {}),
+        ...(status !== "all"
+          ? { status: status as "open" | "matched" | "closed" }
+          : {}),
+      }),
+    [page, debouncedSearch, subject, level, status],
+  );
+
+  const { data, isLoading, isFetching } = useQuery(queryOptions);
+  const cases = data?.data ?? [];
+  const pagination = resolvePaginationMeta(data?.meta, page, DEFAULT_PAGE_SIZE);
 
   const deleteMutation = useMutation({
     ...deleteCasesByIdMutation(),
@@ -149,30 +160,10 @@ export function CasesListView() {
     trackDelete(id, () => deleteMutation.mutateAsync({ path: { id } }));
   };
 
-  const { data, isLoading } = useQuery(allCasesListQueryOptions);
-
-  const cases = data?.data ?? [];
-
-  const filtered = useMemo(
-    () =>
-      cases.filter((caseItem) => {
-        if (!matchesText(caseItem.title, search)) return false;
-        if (subject !== "all" && caseItem.subject !== subject) return false;
-        if (level !== "all" && caseItem.level !== level) return false;
-        if (status !== "all" && caseItem.status !== status) return false;
-        return true;
-      }),
-    [cases, search, subject, level, status],
-  );
-
-  const pagination = useMemo(
-    () => paginateItems(filtered, page, DEFAULT_PAGE_SIZE),
-    [filtered, page],
-  );
-
   const hasActiveFilters =
-    !!search || subject !== "all" || level !== "all" || status !== "all";
-  const showInitialEmpty = !isLoading && cases.length === 0 && !hasActiveFilters;
+    !!debouncedSearch || subject !== "all" || level !== "all" || status !== "all";
+  const showInitialEmpty =
+    !isLoading && !isFetching && cases.length === 0 && !hasActiveFilters;
 
   if (showInitialEmpty) {
     return (
@@ -191,7 +182,7 @@ export function CasesListView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Cases" count={filtered.length}>
+      <PageHeader title="My Cases" count={pagination.total}>
         {user?.role === "parent" && (
           <Button asChild>
             <Link href="/cases/new">
@@ -202,81 +193,61 @@ export function CasesListView() {
         )}
       </PageHeader>
 
-      <TruncatedListNotice count={cases.length} />
-
       <Card className="shadow-sm">
         <CardContent className="pt-6">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <SearchInput
-              value={search}
-              onChange={(value) => {
-                setSearch(value);
+          <ListFilterToolbar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            searchPlaceholder="Search cases..."
+          >
+            <FilterSelect
+              value={subject}
+              onValueChange={(value) => {
+                setSubject(value);
                 setPage(1);
               }}
-              placeholder="Search cases..."
+              placeholder="Subject"
+              items={[
+                { value: "all", label: "All Subjects" },
+                ...SUBJECTS.map((s) => ({ value: s, label: s })),
+              ]}
             />
-            <Select
-              value={subject}
-              onValueChange={(v) => {
-                if (v) {
-                  setSubject(v);
-                  setPage(1);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {SUBJECTS.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+            <FilterSelect
               value={level}
-              onValueChange={(v) => {
-                if (v) {
-                  setLevel(v);
-                  setPage(1);
-                }
+              onValueChange={(value) => {
+                setLevel(value);
+                setPage(1);
               }}
-            >
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                {LEVELS.map((l) => (
-                  <SelectItem key={l} value={l}>{l}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+              placeholder="Level"
+              className="w-full sm:w-36"
+              items={[
+                { value: "all", label: "All Levels" },
+                ...LEVELS.map((l) => ({ value: l, label: l })),
+              ]}
+            />
+            <FilterSelect
               value={status}
-              onValueChange={(v) => {
-                if (v) {
-                  setStatus(v);
-                  setPage(1);
-                }
+              onValueChange={(value) => {
+                setStatus(value);
+                setPage(1);
               }}
-            >
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="matched">Matched</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              placeholder="Status"
+              className="w-full sm:w-36"
+              items={[
+                { value: "all", label: "All Statuses" },
+                { value: "open", label: "Open" },
+                { value: "matched", label: "Matched" },
+                { value: "closed", label: "Closed" },
+              ]}
+            />
+          </ListFilterToolbar>
 
           {isLoading ? (
             <TableContentSkeleton />
-          ) : pagination.items.length === 0 ? (
+          ) : cases.length === 0 ? (
             <EmptyState
               icon={Briefcase}
               title="No matching cases"
@@ -298,7 +269,7 @@ export function CasesListView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagination.items.map((c) => (
+                {cases.map((c) => (
                   <CaseTableRow
                     key={c.id}
                     caseItem={c}

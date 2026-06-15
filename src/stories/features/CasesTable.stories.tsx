@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { CasesTable } from "@/components/cases/cases-table";
-import { mockCases } from "@/lib/mock-data";
+import { mockCases } from "@/stories/fixtures/mock-data";
 
 const meta = {
   title: "Features/CasesTable",

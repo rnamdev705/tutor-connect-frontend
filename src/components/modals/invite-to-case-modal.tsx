@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/search-input";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
-import { InvitingStatusCell } from "@/components/documents/pending-document-rows";
+import { InvitingStatusCell } from "@/components/common/pending-status-cells";
 import { formatCurrency } from "@/lib/format";
 import { matchesCaseSearch } from "@/lib/pagination";
 import { openCasesForInviteQueryOptions } from "@/lib/queries/list-queries";
